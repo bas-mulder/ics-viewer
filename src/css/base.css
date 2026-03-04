@@ -148,6 +148,49 @@ input::placeholder {
     }
 }
 
+/* Mobile optimizations */
+@media (max-width: 480px) {
+    body {
+        font-size: 14px;
+    }
+
+    h1 {
+        font-size: 1.75rem;
+    }
+
+    h2 {
+        font-size: 1.5rem;
+    }
+
+    h3 {
+        font-size: 1.25rem;
+    }
+
+    input[type="text"],
+    input[type="url"],
+    input[type="email"],
+    select {
+        font-size: 16px; /* Prevents zoom on iOS */
+    }
+
+    /* Touch-friendly tap targets */
+    button,
+    a,
+    input[type="button"],
+    input[type="submit"] {
+        min-height: 44px; /* iOS recommended touch target size */
+    }
+}
+
+/* Disable text selection on buttons for better mobile UX */
+button {
+    -webkit-user-select: none;
+    -moz-user-select: none;
+    -ms-user-select: none;
+    user-select: none;
+    -webkit-tap-highlight-color: transparent;
+}
+
 /* SVG Icons */
 svg {
     display: block;

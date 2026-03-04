@@ -174,6 +174,13 @@
     overflow: hidden;
 }
 
+@media (max-width: 768px) {
+    .calendar-wrapper {
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch; /* Smooth scrolling on iOS */
+    }
+}
+
 /* Calendar Grid - Month View */
 .calendar-grid.month-view {
     display: grid;
@@ -412,6 +419,26 @@
 }
 
 @media (max-width: 768px) {
+    .calendar-list-container {
+        padding: var(--space-md);
+    }
+
+    .calendar-list-container h3 {
+        font-size: var(--font-size-base);
+    }
+
+    .calendar-list-item {
+        padding: var(--space-xs) var(--space-sm);
+    }
+
+    .calendar-name {
+        font-size: var(--font-size-sm);
+    }
+
+    .calendar-event-count {
+        font-size: var(--font-size-xs);
+    }
+
     .calendar-controls {
         padding: var(--space-md);
     }
@@ -439,7 +466,7 @@
         padding: 2px 4px;
     }
 
-    /* Hide week and day views on mobile, or simplify */
+    /* Adjust week and day views on mobile */
     .calendar-grid.week-view,
     .calendar-grid.day-view {
         font-size: var(--font-size-xs);
@@ -453,9 +480,70 @@
     .time-slot {
         min-height: 50px;
     }
+
+    .week-event-item {
+        font-size: 0.625rem;
+        padding: 2px;
+    }
+
+    .event-time {
+        font-size: 0.625rem;
+    }
 }
 
 @media (max-width: 480px) {
+    .calendar-list-container {
+        padding: var(--space-sm);
+    }
+
+    .calendar-list-container h3 {
+        font-size: var(--font-size-sm);
+        margin-bottom: var(--space-sm);
+    }
+
+    .calendar-color-indicator {
+        width: 12px;
+        height: 12px;
+    }
+
+    .calendar-toggle-btn,
+    .calendar-remove-btn {
+        width: 28px;
+        height: 28px;
+    }
+
+    .calendar-toggle-btn svg,
+    .calendar-remove-btn svg {
+        width: 16px;
+        height: 16px;
+    }
+
+    .calendar-controls {
+        padding: var(--space-sm);
+        gap: var(--space-sm);
+    }
+
+    .calendar-title {
+        font-size: var(--font-size-lg);
+        margin: var(--space-sm) 0;
+    }
+
+    .calendar-nav .btn {
+        padding: var(--space-xs);
+        width: 36px;
+        height: 36px;
+    }
+
+    .calendar-nav .btn svg {
+        width: 16px;
+        height: 16px;
+    }
+
+    .view-btn {
+        padding: var(--space-xs) var(--space-sm);
+        font-size: 0.625rem;
+    }
+
     .calendar-day-header {
         padding: var(--space-sm);
         font-size: 0.625rem;
@@ -463,5 +551,36 @@
 
     .calendar-day {
         padding: 4px;
+        min-height: 50px;
+        height: 70px;
+    }
+
+    .day-number {
+        font-size: 0.625rem;
+    }
+
+    /* Stack week view days vertically on very small screens */
+    .calendar-grid.week-view {
+        display: block;
+    }
+
+    .week-header-cell,
+    .week-day-column {
+        width: 100%;
+    }
+
+    .week-day-column {
+        margin-bottom: var(--space-md);
+        border-bottom: 1px solid var(--color-border);
+    }
+
+    /* Improve day view on mobile */
+    :root {
+        --calendar-time-width: 50px;
+    }
+
+    .time-label {
+        font-size: 0.625rem;
+        padding: var(--space-xs);
     }
 }

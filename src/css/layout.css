@@ -306,8 +306,26 @@
 
 /* Responsive Adjustments */
 @media (max-width: 768px) {
+    .app-header {
+        padding: var(--space-md) 0;
+    }
+
     .app-title {
-        font-size: var(--font-size-xl);
+        font-size: var(--font-size-lg);
+    }
+
+    .header-actions {
+        gap: var(--space-xs);
+    }
+
+    #loadNewBtn span,
+    #addCalendarBtn span {
+        display: none;
+    }
+
+    #loadNewBtn,
+    #addCalendarBtn {
+        padding: var(--space-sm);
     }
 
     .upload-card {
@@ -323,9 +341,37 @@
         right: var(--space-md);
         bottom: var(--space-md);
     }
-    
-    #loadNewBtn span {
-        display: none;
+}
+
+/* Additional mobile styles for smaller screens */
+@media (max-width: 480px) {
+    .app-header {
+        padding: var(--space-sm) 0;
+    }
+
+    .app-title {
+        font-size: var(--font-size-base);
+    }
+
+    .container {
+        padding: 0 var(--space-sm);
+    }
+
+    .app-main {
+        padding: var(--space-lg) 0;
+    }
+
+    .upload-card {
+        padding: var(--space-md);
+    }
+
+    .file-drop-zone {
+        padding: var(--space-lg);
+    }
+
+    .btn {
+        font-size: var(--font-size-sm);
+        padding: var(--space-xs) var(--space-md);
     }
 }
 
@@ -409,5 +455,37 @@
     
     .footer-section {
         text-align: center;
+    }
+}
+
+@media (max-width: 480px) {
+    .app-footer {
+        padding: var(--space-xl) 0 var(--space-md);
+    }
+
+    .footer-content {
+        gap: var(--space-lg);
+        margin-bottom: var(--space-md);
+    }
+
+    .footer-section h3 {
+        font-size: var(--font-size-base);
+    }
+
+    .footer-section h4 {
+        font-size: var(--font-size-sm);
+    }
+
+    .footer-section p,
+    .footer-section a {
+        font-size: var(--font-size-sm);
+    }
+
+    .footer-bottom {
+        padding-top: var(--space-md);
+    }
+
+    .footer-bottom p {
+        font-size: var(--font-size-xs);
     }
 }
