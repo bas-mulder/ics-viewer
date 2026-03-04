@@ -305,11 +305,17 @@ export async function loadICSFromFile(file) {
 /**
  * Load ICS from a URL
  * @param {string} url - URL to ICS file
+ * @param {boolean} useCorsProxy - Whether to use a CORS proxy (default: false)
  * @returns {Promise<Array<Object>>} Promise resolving to array of events
  */
-export async function loadICSFromURL(url) {
+export async function loadICSFromURL(url, useCorsProxy = false) {
     try {
-        const response = await fetch(url);
+        // If CORS proxy is requested, prepend the proxy URL
+        const fetchUrl = useCorsProxy 
+            ? `https://corsproxy.io/?${encodeURIComponent(url)}`
+            : url;
+        
+        const response = await fetch(fetchUrl);
         
         if (!response.ok) {
             throw new Error(`HTTP error! status: ${response.status}`);
@@ -320,6 +326,10 @@ export async function loadICSFromURL(url) {
         return events;
     } catch (error) {
         if (error.message.includes('CORS') || error.name === 'TypeError') {
+            // If not already using proxy, suggest trying with proxy
+            if (!useCorsProxy) {
+                throw new Error('CORS_ERROR'); // Special error code for retry with proxy
+            }
             throw new Error('Failed to load calendar: CORS policy prevents loading from this URL. Try uploading the file instead.');
         }
         throw new Error(`Failed to load calendar from URL: ${error.message}`);

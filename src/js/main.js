@@ -279,7 +279,19 @@ class ICSViewerApp {
         this.showLoading();
         
         try {
-            const events = await loadICSFromURL(url);
+            // First try without CORS proxy
+            let events;
+            try {
+                events = await loadICSFromURL(url, false);
+            } catch (error) {
+                // If CORS error, retry with proxy
+                if (error.message === 'CORS_ERROR') {
+                    console.log('CORS detected, retrying with proxy...');
+                    events = await loadICSFromURL(url, true);
+                } else {
+                    throw error;
+                }
+            }
             
             if (events.length === 0) {
                 throw new Error('No events found in the calendar');

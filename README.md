@@ -68,26 +68,31 @@ To run the application locally:
    ```
 
 2. **Serve the files**:
-   Since the app uses ES6 modules, you need to serve it via HTTP (not just opening the file).
+   Since the app uses ES6 modules, you need to serve it via HTTP with correct MIME types.
    
-   Using Python:
+   **Option 1: Using Node.js (Recommended)**
    ```bash
-   # Python 3
-   python -m http.server 8000 --directory src
+   # Using the included server with correct MIME types
+   node server.js
+   
+   # Or using npm
+   npm start
    ```
    
-   Using Node.js (with http-server):
+   **Option 2: Using npx**
    ```bash
    npx http-server src -p 8000
    ```
    
-   Using PHP:
-   ```bash
-   php -S localhost:8000 -t src
-   ```
+   **Option 3: Using VS Code**
+   - Install "Live Server" extension
+   - Right-click on `src/index.html`
+   - Select "Open with Live Server"
 
 3. **Open in browser**:
    Navigate to `http://localhost:8000`
+   
+**Note**: Python's `SimpleHTTPServer` may serve JavaScript files with incorrect MIME types, causing ES6 modules to fail. Use one of the recommended options above.
 
 ## Usage
 
@@ -101,7 +106,7 @@ To run the application locally:
 1. Paste the URL of an ICS calendar
 2. Click "Load"
 
-Note: Some URLs may have CORS restrictions. If loading fails, download the file and upload it instead.
+**Note on CORS**: Some URLs may have CORS (Cross-Origin Resource Sharing) restrictions. The app will automatically attempt to use a CORS proxy if the direct request fails. If both methods fail, you can download the file and upload it manually.
 
 ### Navigating the Calendar
 
