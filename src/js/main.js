@@ -65,14 +65,22 @@ class ICSViewerApp {
      */
     setupEventListeners() {
         // File upload
-        this.fileSelectBtn.addEventListener('click', () => this.fileInput.click());
+        this.fileSelectBtn.addEventListener('click', (e) => {
+            e.stopPropagation(); // Prevent event bubbling to drop zone
+            this.fileInput.click();
+        });
         this.fileInput.addEventListener('change', (e) => this.handleFileSelect(e));
         
         // Drag and drop
         this.fileDropZone.addEventListener('dragover', (e) => this.handleDragOver(e));
         this.fileDropZone.addEventListener('dragleave', (e) => this.handleDragLeave(e));
         this.fileDropZone.addEventListener('drop', (e) => this.handleDrop(e));
-        this.fileDropZone.addEventListener('click', () => this.fileInput.click());
+        this.fileDropZone.addEventListener('click', (e) => {
+            // Only trigger file input if clicking on the drop zone itself, not child elements
+            if (e.target === this.fileDropZone || e.target.closest('.file-drop-zone') === this.fileDropZone && e.target !== this.fileSelectBtn) {
+                this.fileInput.click();
+            }
+        });
         
         // URL input
         this.urlLoadBtn.addEventListener('click', () => this.handleURLLoad());
