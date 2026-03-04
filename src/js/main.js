@@ -23,6 +23,7 @@ class ICSViewerApp {
         
         this.initializeTheme();
         this.initializeElements();
+        this.initializeShortcutDefinitions();
         this.setupEventListeners();
         this.initializeModals();
         this.loadCalendarListState(); // Load calendar list collapsed state
@@ -104,6 +105,10 @@ class ICSViewerApp {
         this.viewBtns = document.querySelectorAll('.view-btn');
         
         // Settings
+        this.shortcutsBtn = document.getElementById('shortcutsBtn');
+        this.shortcutsModal = document.getElementById('shortcutsModal');
+        this.shortcutsCloseBtn = document.getElementById('shortcutsCloseBtn');
+        this.shortcutsList = document.getElementById('shortcutsList');
         this.settingsBtn = document.getElementById('settingsBtn');
         this.settingsModal = document.getElementById('settingsModal');
         this.settingsCloseBtn = document.getElementById('settingsCloseBtn');
@@ -126,6 +131,7 @@ class ICSViewerApp {
         this.contextDeleteEvent = document.getElementById('contextDeleteEvent');
         this.contextMenuData = null; // Stores date/time data for context menu
         this.contextMenuEvent = null; // Stores event data for context menu
+        this.activeEvent = null; // Tracks last interacted event for shortcuts
         
         // Random calendar modal
         this.generateRandomBtn = document.getElementById('generateRandomBtn');
@@ -152,6 +158,29 @@ class ICSViewerApp {
         // Store generated events for preview
         this.generatedEvents = null;
         this.generatedConfig = null;
+
+        this.shortcuts = [];
+    }
+
+    /**
+     * Define app keyboard shortcuts
+     */
+    initializeShortcutDefinitions() {
+        this.shortcuts = [
+            { keys: 'N', description: 'Add new event' },
+            { keys: 'E', description: 'Edit selected event' },
+            { keys: 'Delete', description: 'Delete selected event' },
+            { keys: 'V', description: 'View selected event details' },
+            { keys: 'Arrow Left', description: 'Go to previous period' },
+            { keys: 'Arrow Right', description: 'Go to next period' },
+            { keys: 'T', description: 'Jump to today' },
+            { keys: 'M / W / D', description: 'Switch month/week/day view' },
+            { keys: 'S', description: 'Open settings' },
+            { keys: 'R', description: 'Open random calendar generator' },
+            { keys: 'C', description: 'Collapse/expand calendar list' },
+            { keys: '?', description: 'Open shortcuts overview' },
+            { keys: 'Esc', description: 'Close open modal/context menu' }
+        ];
     }
 
     /**
@@ -216,6 +245,13 @@ class ICSViewerApp {
         });
         
         // Settings
+        this.shortcutsBtn.addEventListener('click', () => this.showShortcuts());
+        this.shortcutsCloseBtn.addEventListener('click', () => this.hideShortcuts());
+        this.shortcutsModal.addEventListener('click', (e) => {
+            if (e.target === this.shortcutsModal) {
+                this.hideShortcuts();
+            }
+        });
         this.settingsBtn.addEventListener('click', () => this.showSettings());
         this.settingsCloseBtn.addEventListener('click', () => this.hideSettings());
         this.settingsModal.addEventListener('click', (e) => {
@@ -252,6 +288,7 @@ class ICSViewerApp {
         }
         document.addEventListener('click', () => this.hideContextMenu());
         document.addEventListener('contextmenu', (e) => this.handleRightClick(e));
+        document.addEventListener('keydown', (e) => this.handleKeyboardShortcuts(e));
         
         // Handle browser back/forward navigation
         window.addEventListener('popstate', (e) => this.handlePopState(e));
@@ -1084,6 +1121,7 @@ class ICSViewerApp {
             if (!this.uploadSection.classList.contains('hidden')) {
                 e.preventDefault();
                 this.contextMenuEvent = eventEl.__eventData;
+                this.setActiveEvent(eventEl.__eventData);
                 this.contextMenuData = null;
                 this.showContextMenuOptions('event');
                 this.showContextMenu(e.clientX, e.clientY);
@@ -1185,10 +1223,11 @@ class ICSViewerApp {
      * Handle context menu "Edit Event" click
      */
     handleContextEditEvent() {
-        if (this.contextMenuEvent && this.eventForm) {
-            const eventCalendar = this.findCalendarForEvent(this.contextMenuEvent);
+        const activeEvent = this.getActiveEvent();
+        if (activeEvent && this.eventForm) {
+            const eventCalendar = this.findCalendarForEvent(activeEvent);
             const calendarId = eventCalendar ? eventCalendar.id : null;
-            this.eventForm.openForEdit(this.contextMenuEvent, this.calendars, calendarId);
+            this.eventForm.openForEdit(activeEvent, this.calendars, calendarId);
         }
         this.hideContextMenu();
     }
@@ -1197,7 +1236,8 @@ class ICSViewerApp {
      * Handle context menu "Delete Event" click
      */
     handleContextDeleteEvent() {
-        if (!this.contextMenuEvent) {
+        const activeEvent = this.getActiveEvent();
+        if (!activeEvent) {
             this.hideContextMenu();
             return;
         }
@@ -1207,26 +1247,33 @@ class ICSViewerApp {
             return;
         }
 
-        const targetCalendar = this.findCalendarForEvent(this.contextMenuEvent);
+        this.deleteEventByData(activeEvent);
+        this.hideContextMenu();
+    }
+
+    /**
+     * Delete a specific event from its calendar
+     */
+    deleteEventByData(eventData) {
+        const targetCalendar = this.findCalendarForEvent(eventData);
         if (!targetCalendar) {
             this.showError('Could not find event to delete');
-            this.hideContextMenu();
-            return;
+            return false;
         }
 
-        const eventIndex = targetCalendar.events.findIndex((e) => e.uid === this.contextMenuEvent.uid);
+        const eventIndex = targetCalendar.events.findIndex((e) => e.uid === eventData.uid);
         if (eventIndex === -1) {
             this.showError('Could not find event to delete');
-            this.hideContextMenu();
-            return;
+            return false;
         }
 
         targetCalendar.events.splice(eventIndex, 1);
         targetCalendar.icsData = eventsToICS(targetCalendar.events, targetCalendar.name);
         this.saveCalendarsToStorage();
         this.updateVisibleEvents();
+        this.activeEvent = null;
         this.showSuccess('Event deleted successfully');
-        this.hideContextMenu();
+        return true;
     }
 
     /**
@@ -1245,6 +1292,30 @@ class ICSViewerApp {
         }
 
         return this.calendars.find((cal) => cal.events.some((e) => e.uid === event.uid)) || null;
+    }
+
+    /**
+     * Track the currently active event for shortcuts
+     */
+    setActiveEvent(event) {
+        this.activeEvent = event || null;
+    }
+
+    /**
+     * Resolve currently active event against latest data
+     */
+    getActiveEvent() {
+        const source = this.contextMenuEvent || this.activeEvent;
+        if (!source || !source.uid) {
+            return null;
+        }
+
+        const calendar = this.findCalendarForEvent(source);
+        if (!calendar) {
+            return null;
+        }
+
+        return calendar.events.find((event) => event.uid === source.uid) || null;
     }
 
     /**
@@ -1530,8 +1601,12 @@ class ICSViewerApp {
             this.calendar = new Calendar(this.calendarGrid, allEvents, {
                 view: savedView,
                 weekStartsOn: this.weekStartsOn,
-                onEventClick: (event) => this.eventModal.show(event),
+                onEventClick: (event) => {
+                    this.setActiveEvent(event);
+                    this.eventModal.show(event);
+                },
                 onEventRightClick: (event, e) => {
+                    this.setActiveEvent(event);
                     this.contextMenuEvent = event;
                     this.contextMenuData = null;
                     this.showContextMenuOptions('event');
@@ -1677,6 +1752,190 @@ class ICSViewerApp {
         if (isCollapsed) {
             this.calendarListContainer.classList.add('collapsed');
         }
+    }
+
+    /**
+     * Handle global keyboard shortcuts
+     */
+    handleKeyboardShortcuts(e) {
+        if (this.shouldIgnoreShortcut(e)) {
+            return;
+        }
+
+        const key = e.key;
+
+        if (key === 'Escape') {
+            this.closeTopOverlay();
+            return;
+        }
+
+        if (key === '?' || (e.shiftKey && key === '/')) {
+            e.preventDefault();
+            this.showShortcuts();
+            return;
+        }
+
+        if (key === 'ArrowLeft') {
+            e.preventDefault();
+            this.navigatePrevious();
+            return;
+        }
+
+        if (key === 'ArrowRight') {
+            e.preventDefault();
+            this.navigateNext();
+            return;
+        }
+
+        const lowerKey = key.toLowerCase();
+
+        switch (lowerKey) {
+            case 'n':
+                e.preventDefault();
+                this.openAddEventForm();
+                break;
+            case 'e': {
+                e.preventDefault();
+                const event = this.getActiveEvent();
+                if (event) {
+                    const eventCalendar = this.findCalendarForEvent(event);
+                    const calendarId = eventCalendar ? eventCalendar.id : null;
+                    this.eventForm.openForEdit(event, this.calendars, calendarId);
+                } else {
+                    this.showError('Select an event first (click one)');
+                }
+                break;
+            }
+            case 'v': {
+                e.preventDefault();
+                const event = this.getActiveEvent();
+                if (event) {
+                    this.eventModal.show(event);
+                } else {
+                    this.showError('Select an event first (click one)');
+                }
+                break;
+            }
+            case 'm':
+                e.preventDefault();
+                this.switchView('month');
+                break;
+            case 'w':
+                e.preventDefault();
+                this.switchView('week');
+                break;
+            case 'd':
+                e.preventDefault();
+                this.switchView('day');
+                break;
+            case 't':
+                e.preventDefault();
+                this.navigateToday();
+                break;
+            case 's':
+                e.preventDefault();
+                this.showSettings();
+                break;
+            case 'r':
+                e.preventDefault();
+                this.showRandomCalendarModal();
+                break;
+            case 'c':
+                e.preventDefault();
+                this.toggleCalendarList();
+                break;
+            default:
+                break;
+        }
+
+        if (key === 'Delete' || key === 'Backspace') {
+            const event = this.getActiveEvent();
+            if (event) {
+                e.preventDefault();
+                if (confirm('Delete selected event?')) {
+                    this.deleteEventByData(event);
+                }
+            }
+        }
+    }
+
+    /**
+     * Check if keyboard shortcut should be ignored
+     */
+    shouldIgnoreShortcut(e) {
+        if (e.metaKey || e.ctrlKey || e.altKey) {
+            return true;
+        }
+
+        const target = e.target;
+        const typingTarget = target && (
+            target.tagName === 'INPUT' ||
+            target.tagName === 'TEXTAREA' ||
+            target.tagName === 'SELECT' ||
+            target.isContentEditable
+        );
+
+        if (typingTarget) {
+            return true;
+        }
+
+        return false;
+    }
+
+    /**
+     * Close top-most overlay
+     */
+    closeTopOverlay() {
+        if (!this.contextMenu.classList.contains('hidden')) {
+            this.hideContextMenu();
+            return;
+        }
+        if (!this.shortcutsModal.classList.contains('hidden')) {
+            this.hideShortcuts();
+            return;
+        }
+        if (!this.settingsModal.classList.contains('hidden')) {
+            this.hideSettings();
+            return;
+        }
+        if (!this.randomCalendarModal.classList.contains('hidden')) {
+            this.hideRandomCalendarModal();
+            return;
+        }
+        if (!this.eventForm.modal.classList.contains('hidden')) {
+            this.eventForm.close();
+        }
+    }
+
+    /**
+     * Show shortcuts help modal
+     */
+    showShortcuts() {
+        this.renderShortcutsList();
+        this.shortcutsModal.classList.remove('hidden');
+    }
+
+    /**
+     * Hide shortcuts help modal
+     */
+    hideShortcuts() {
+        this.shortcutsModal.classList.add('hidden');
+    }
+
+    /**
+     * Render all shortcut definitions in the modal
+     */
+    renderShortcutsList() {
+        if (!this.shortcutsList) {
+            return;
+        }
+
+        this.shortcutsList.innerHTML = this.shortcuts.map((item) => `
+            <div class="shortcut-item">
+                <kbd class="shortcut-key">${this.escapeHtml(item.keys)}</kbd>
+                <span class="shortcut-description">${this.escapeHtml(item.description)}</span>
+            </div>
+        `).join('');
     }
 
     /**
