@@ -234,6 +234,7 @@
     padding: var(--space-xs);
     position: relative;
     background-color: var(--color-bg-primary);
+    overflow: visible;
 }
 
 .week-hour-cell:hover {
@@ -259,6 +260,7 @@
     box-shadow: var(--shadow-sm);
     transition: transform var(--transition-fast), box-shadow var(--transition-fast);
     border-left: 3px solid var(--color-primary-dark);
+    z-index: 1;
 }
 
 .week-event-item:hover {
