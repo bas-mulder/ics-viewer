@@ -17,6 +17,13 @@ A modern, lightweight web application for viewing ICS (iCalendar) files. Built w
   - Click any event to view complete details in a modal
   - Displays: title, date/time, duration, location, description, organizer, attendees, and more
 
+- **Multiple Calendars**
+  - Load multiple ICS files simultaneously
+  - Each calendar gets a unique random color
+  - Toggle visibility of individual calendars
+  - Remove calendars you no longer need
+  - Automatic persistence to localStorage
+
 - **Customization**
   - Dark/Light mode toggle with smooth transitions
   - Auto-detect week start day based on user locale
@@ -32,7 +39,9 @@ A modern, lightweight web application for viewing ICS (iCalendar) files. Built w
 - **Modern Design**
   - Clean, sleek interface with custom CSS
   - Dark mode support for comfortable viewing
-  - Fully responsive (mobile, tablet, desktop)
+  - Fully responsive design (mobile, tablet, desktop)
+  - Touch-friendly 44px tap targets on mobile
+  - Optimized for iOS and Android devices
   - Smooth animations and transitions
   - Accessibility-friendly with keyboard navigation
 
@@ -154,14 +163,36 @@ When you load a calendar from a URL, the calendar URL is automatically added to 
 
 Example: `https://yourdomain.com/ics-viewer/?calendar=https://example.com/events.ics`
 
+### Mobile Usage
+
+The application is fully optimized for mobile devices:
+
+- **Touch-Friendly**: All buttons and interactive elements meet the 44px minimum touch target size
+- **Responsive Layout**: Automatically adapts to your screen size
+- **Smooth Scrolling**: Native touch scrolling for calendar views
+- **Icon-Only Buttons**: On small screens, button text is hidden to save space
+- **Prevents Zoom**: Input fields use 16px font size to prevent unwanted zoom on iOS
+- **Optimized Views**: 
+  - Month view: Compact cells with readable event text
+  - Week view: Stacks days vertically on very small screens
+  - Day view: Scrollable time slots with proper sizing
+
+**Pro tip**: Use landscape orientation on phones for a better week/day view experience.
+
 ## Browser Support
 
 This application requires a modern browser with ES6+ support:
 
+**Desktop:**
 - Chrome 90+
 - Firefox 88+
 - Safari 14+
 - Edge 90+
+
+**Mobile:**
+- iOS Safari 14+
+- Chrome for Android 90+
+- Samsung Internet 14+
 
 ## Technical Details
 
