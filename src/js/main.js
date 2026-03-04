@@ -116,6 +116,32 @@ class ICSViewerApp {
         this.errorMessage = document.getElementById('errorMessage');
         this.downloadBtn = document.getElementById('downloadBtn');
         this.successToast = document.getElementById('successToast');
+        
+        // Random calendar modal
+        this.generateRandomBtn = document.getElementById('generateRandomBtn');
+        this.randomCalendarModal = document.getElementById('randomCalendarModal');
+        this.randomModalCloseBtn = document.getElementById('randomModalCloseBtn');
+        this.randomConfigForm = document.getElementById('randomConfigForm');
+        this.generatePreviewBtn = document.getElementById('generatePreviewBtn');
+        this.randomPreview = document.getElementById('randomPreview');
+        this.regenerateBtn = document.getElementById('regenerateBtn');
+        this.addRandomCalendarBtn = document.getElementById('addRandomCalendarBtn');
+        this.previewEvents = document.getElementById('previewEvents');
+        
+        // Random calendar form inputs
+        this.randomCalendarName = document.getElementById('randomCalendarName');
+        this.randomEventCount = document.getElementById('randomEventCount');
+        this.randomSeed = document.getElementById('randomSeed');
+        this.randomDaysBefore = document.getElementById('randomDaysBefore');
+        this.randomDaysAfter = document.getElementById('randomDaysAfter');
+        this.typeMeeting = document.getElementById('typeMeeting');
+        this.typeAppointment = document.getElementById('typeAppointment');
+        this.typeAllday = document.getElementById('typeAllday');
+        this.typeMultiday = document.getElementById('typeMultiday');
+        
+        // Store generated events for preview
+        this.generatedEvents = null;
+        this.generatedConfig = null;
     }
 
     /**
@@ -186,6 +212,18 @@ class ICSViewerApp {
         
         // Theme toggle
         this.themeToggleBtn.addEventListener('click', () => this.toggleTheme());
+        
+        // Random calendar modal
+        this.generateRandomBtn.addEventListener('click', () => this.showRandomCalendarModal());
+        this.randomModalCloseBtn.addEventListener('click', () => this.hideRandomCalendarModal());
+        this.randomCalendarModal.addEventListener('click', (e) => {
+            if (e.target === this.randomCalendarModal) {
+                this.hideRandomCalendarModal();
+            }
+        });
+        this.generatePreviewBtn.addEventListener('click', () => this.generateRandomPreview());
+        this.regenerateBtn.addEventListener('click', () => this.generateRandomPreview());
+        this.addRandomCalendarBtn.addEventListener('click', () => this.addGeneratedCalendar());
         
         // Handle browser back/forward navigation
         window.addEventListener('popstate', (e) => this.handlePopState(e));
@@ -449,85 +487,380 @@ class ICSViewerApp {
     }
 
     /**
-     * Save currently viewed random calendar to localStorage
+     * Show random calendar generator modal
      */
-    addRandomCalendarToCollection() {
-        if (!this.randomCalendar) return;
-        
-        const { config, events, icsData } = this.randomCalendar;
-        
-        // Clear random view mode
-        this.isRandomCalendarView = false;
-        this.randomCalendar = null;
-        
-        // Load existing calendars from storage
-        this.calendars = [];
-        this.loadCalendarsFromStorage();
-        
-        // Add this calendar (set source to null = saved calendar)
-        this.addCalendar(config.name, events, null, icsData);
-        
-        // Clear URL parameters
-        const url = new URL(window.location);
-        url.searchParams.delete('random');
-        url.searchParams.delete('seed');
-        url.searchParams.delete('count');
-        url.searchParams.delete('daysBefore');
-        url.searchParams.delete('daysAfter');
-        url.searchParams.delete('types');
-        url.searchParams.delete('name');
-        url.searchParams.delete('merge');
-        window.history.replaceState({}, '', url);
-        
-        this.showCalendar();
-        
-        // Show success message
-        this.showSuccess('Calendar added to your collection!');
+    showRandomCalendarModal() {
+        this.randomCalendarModal.classList.remove('hidden');
+        this.randomPreview.classList.add('hidden');
+        this.randomConfigForm.classList.remove('hidden');
+        // Reset form to defaults if no generated events
+        if (!this.generatedEvents) {
+            this.randomSeed.value = '';
+        }
     }
 
     /**
-     * Download visible calendar(s) as ICS file
+     * Hide random calendar generator modal
      */
-    downloadCalendar() {
-        const visibleCalendars = this.calendars.filter(c => c.visible);
+    hideRandomCalendarModal() {
+        this.randomCalendarModal.classList.add('hidden');
+    }
+
+    /**
+     * Generate random calendar preview
+     */
+    async generateRandomPreview() {
+        try {
+            // Get form values
+            const config = this.getRandomCalendarConfig();
+            
+            // Validate at least one event type is selected
+            if (config.types.length === 0) {
+                this.showError('Please select at least one event type');
+                return;
+            }
+            
+            // Generate events
+            this.showLoading();
+            const events = await generateRandomEvents(config);
+            
+            // Store for later use
+            this.generatedEvents = events;
+            this.generatedConfig = config;
+            
+            // Show preview
+            this.renderRandomPreview(events, config);
+            this.hideLoading();
+            
+            // Show preview section, hide form
+            this.randomConfigForm.classList.add('hidden');
+            this.randomPreview.classList.remove('hidden');
+            
+        } catch (error) {
+            console.error('Failed to generate random calendar:', error);
+            this.hideLoading();
+            this.showError('Failed to generate random calendar: ' + error.message);
+        }
+    }
+
+    /**
+     * Get random calendar configuration from form
+     */
+    getRandomCalendarConfig() {
+        const types = [];
+        if (this.typeMeeting.checked) types.push('meeting');
+        if (this.typeAppointment.checked) types.push('appointment');
+        if (this.typeAllday.checked) types.push('allday');
+        if (this.typeMultiday.checked) types.push('multiday');
         
-        if (visibleCalendars.length === 0) {
-            this.showError('No calendars to download');
+        return {
+            seed: this.randomSeed.value ? parseInt(this.randomSeed.value) : Date.now(),
+            count: Math.min(200, Math.max(1, parseInt(this.randomEventCount.value) || 20)),
+            daysBefore: Math.max(0, parseInt(this.randomDaysBefore.value) || 30),
+            daysAfter: Math.max(0, parseInt(this.randomDaysAfter.value) || 60),
+            name: this.randomCalendarName.value.trim() || 'Test Calendar',
+            types: types
+        };
+    }
+
+    /**
+     * Render random calendar preview
+     */
+    renderRandomPreview(events, config) {
+        // Update preview info
+        document.getElementById('previewCalendarName').textContent = config.name;
+        document.getElementById('previewEventCount').textContent = events.length;
+        
+        // Calculate date range
+        if (events.length > 0) {
+            const dates = events.map(e => new Date(e.start)).sort((a, b) => a - b);
+            const minDate = dates[0];
+            const maxDate = dates[dates.length - 1];
+            const dateRange = `${this.formatDate(minDate)} - ${this.formatDate(maxDate)}`;
+            document.getElementById('previewDateRange').textContent = dateRange;
+        } else {
+            document.getElementById('previewDateRange').textContent = 'No events';
+        }
+        
+        // Render event list (first 10 events)
+        const previewCount = Math.min(10, events.length);
+        const sortedEvents = [...events].sort((a, b) => new Date(a.start) - new Date(b.start));
+        
+        let html = '<div class="preview-event-list">';
+        for (let i = 0; i < previewCount; i++) {
+            const event = sortedEvents[i];
+            const startDate = new Date(event.start);
+            const endDate = event.end ? new Date(event.end) : null;
+            
+            html += `
+                <div class="preview-event-item">
+                    <div class="preview-event-date">${this.formatEventDate(startDate, endDate)}</div>
+                    <div class="preview-event-title">${this.escapeHtml(event.summary)}</div>
+                    ${event.location ? `<div class="preview-event-location">${this.escapeHtml(event.location)}</div>` : ''}
+                </div>
+            `;
+        }
+        
+        if (events.length > previewCount) {
+            html += `<div class="preview-event-more">... and ${events.length - previewCount} more events</div>`;
+        }
+        
+        html += '</div>';
+        this.previewEvents.innerHTML = html;
+    }
+
+    /**
+     * Format event date for preview
+     */
+    formatEventDate(startDate, endDate) {
+        const options = { month: 'short', day: 'numeric', year: 'numeric' };
+        const startStr = startDate.toLocaleDateString(undefined, options);
+        
+        if (!endDate || startDate.toDateString() === endDate.toDateString()) {
+            // Same day or no end date
+            const timeStr = startDate.toLocaleTimeString(undefined, { hour: 'numeric', minute: '2-digit' });
+            return `${startStr} at ${timeStr}`;
+        } else {
+            // Multi-day event
+            const endStr = endDate.toLocaleDateString(undefined, options);
+            return `${startStr} - ${endStr}`;
+        }
+    }
+
+    /**
+     * Format date for display
+     */
+    formatDate(date) {
+        return date.toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' });
+    }
+
+    /**
+     * Add generated random calendar to calendars collection
+     */
+    async addGeneratedCalendar() {
+        if (!this.generatedEvents || !this.generatedConfig) {
+            this.showError('No calendar generated. Please generate a preview first.');
             return;
         }
         
-        // Combine events from all visible calendars
-        const allEvents = visibleCalendars.flatMap(c => c.events);
-        
-        // Generate calendar name
-        const calendarName = visibleCalendars.length === 1
-            ? visibleCalendars[0].name
-            : 'Combined Calendar';
-        
-        // Generate ICS
-        const icsContent = eventsToICS(allEvents, calendarName);
-        
-        // Trigger download
-        this.triggerICSDownload(icsContent, calendarName);
+        try {
+            // Convert events to ICS
+            const icsData = eventsToICS(this.generatedEvents, this.generatedConfig.name);
+            
+            // Add to calendars
+            this.addCalendar(
+                this.generatedConfig.name,
+                this.generatedEvents,
+                `random:${this.generatedConfig.seed}`,
+                icsData
+            );
+            
+            // Save to storage
+            this.saveCalendarsToStorage();
+            
+            // Hide modal
+            this.hideRandomCalendarModal();
+            
+            // Show calendar section if not already shown
+            if (this.uploadSection && !this.uploadSection.classList.contains('hidden')) {
+                this.showCalendar();
+            } else {
+                // Just update the display
+                this.renderCalendarList();
+                this.updateVisibleEvents();
+            }
+            
+            // Show success message
+            this.showSuccess(`Calendar "${this.generatedConfig.name}" added successfully!`);
+            
+            // Clear generated data
+            this.generatedEvents = null;
+            this.generatedConfig = null;
+            
+        } catch (error) {
+            console.error('Failed to add random calendar:', error);
+            this.showError('Failed to add calendar: ' + error.message);
+        }
     }
 
     /**
-     * Show success toast message
+     * Add a calendar to the collection
      */
-    showSuccess(message) {
-        if (!this.successToast) return;
+    addCalendar(name, events, source, icsData) {
+        const id = this.nextCalendarId++;
+        const color = this.generateRandomColor();
         
-        const messageEl = this.successToast.querySelector('span');
-        if (messageEl) {
-            messageEl.textContent = message;
+        const calendar = {
+            id,
+            name,
+            events,
+            color,
+            visible: true,
+            source,
+            icsData
+        };
+        
+        this.calendars.push(calendar);
+        return calendar;
+    }
+
+    /**
+     * Remove a calendar from the collection
+     */
+    removeCalendar(id) {
+        const index = this.calendars.findIndex(cal => cal.id === id);
+        if (index !== -1) {
+            this.calendars.splice(index, 1);
+            this.saveCalendarsToStorage();
+            this.renderCalendarList();
+            this.updateVisibleEvents();
+        }
+    }
+
+    /**
+     * Load calendars from localStorage
+     */
+    loadCalendarsFromStorage() {
+        try {
+            const saved = loadFromStorage('calendars', null);
+            if (saved && Array.isArray(saved)) {
+                this.calendars = saved;
+                // Restore nextCalendarId
+                if (this.calendars.length > 0) {
+                    this.nextCalendarId = Math.max(...this.calendars.map(c => c.id)) + 1;
+                }
+            }
+        } catch (error) {
+            console.error('Failed to load calendars from storage:', error);
+        }
+    }
+
+    /**
+     * Save calendars to localStorage
+     */
+    saveCalendarsToStorage() {
+        // Don't save if in random calendar view mode (isolated)
+        if (this.isRandomCalendarView && !this.randomCalendar?.config?.merge) {
+            return;
         }
         
-        this.successToast.classList.remove('hidden');
+        try {
+            saveToStorage('calendars', this.calendars);
+        } catch (error) {
+            console.error('Failed to save calendars to storage:', error);
+            this.showError('Failed to save calendars');
+        }
+    }
+
+    /**
+     * Render the calendar list in the sidebar
+     */
+    renderCalendarList() {
+        if (!this.calendarList) return;
         
-        // Auto-hide after 3 seconds
-        setTimeout(() => {
-            this.successToast.classList.add('hidden');
-        }, 3000);
+        if (this.calendars.length === 0) {
+            this.calendarList.innerHTML = '<p class="calendar-list-empty">No calendars loaded</p>';
+            return;
+        }
+        
+        this.calendarList.innerHTML = this.calendars.map(cal => `
+            <div class="calendar-list-item" data-calendar-id="${cal.id}">
+                <div class="calendar-color" style="background-color: ${cal.color}"></div>
+                <div class="calendar-info">
+                    <div class="calendar-name">${this.escapeHtml(cal.name)}</div>
+                    <div class="calendar-source">${this.formatCalendarSource(cal.source)}</div>
+                </div>
+                <div class="calendar-actions">
+                    <button class="calendar-toggle" data-action="toggle" data-calendar-id="${cal.id}" title="${cal.visible ? 'Hide' : 'Show'} calendar">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            ${cal.visible ? 
+                                '<path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle>' : 
+                                '<path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"></path><line x1="1" y1="1" x2="23" y2="23"></line>'
+                            }
+                        </svg>
+                    </button>
+                    <button class="calendar-remove" data-action="remove" data-calendar-id="${cal.id}" title="Remove calendar">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <polyline points="3 6 5 6 21 6"></polyline>
+                            <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+                        </svg>
+                    </button>
+                </div>
+            </div>
+        `).join('');
+        
+        // Add event listeners
+        this.calendarList.querySelectorAll('[data-action="toggle"]').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                const id = parseInt(btn.dataset.calendarId);
+                this.toggleCalendarVisibility(id);
+            });
+        });
+        
+        this.calendarList.querySelectorAll('[data-action="remove"]').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                const id = parseInt(btn.dataset.calendarId);
+                if (confirm('Are you sure you want to remove this calendar?')) {
+                    this.removeCalendar(id);
+                }
+            });
+        });
+    }
+
+    /**
+     * Format calendar source for display
+     */
+    formatCalendarSource(source) {
+        if (source.startsWith('file:')) {
+            return 'Uploaded file';
+        } else if (source.startsWith('url:')) {
+            return 'From URL';
+        } else if (source.startsWith('random:')) {
+            return 'Random calendar';
+        }
+        return 'Unknown source';
+    }
+
+    /**
+     * Toggle calendar visibility
+     */
+    toggleCalendarVisibility(id) {
+        const calendar = this.calendars.find(cal => cal.id === id);
+        if (calendar) {
+            calendar.visible = !calendar.visible;
+            this.saveCalendarsToStorage();
+            this.renderCalendarList();
+            this.updateVisibleEvents();
+        }
+    }
+
+    /**
+     * Update visible events in the calendar view
+     */
+    updateVisibleEvents() {
+        if (!this.calendar) return;
+        
+        // Collect all events from visible calendars
+        const allEvents = [];
+        this.calendars.forEach(cal => {
+            if (cal.visible && cal.events) {
+                // Add calendar color and id to each event
+                cal.events.forEach(event => {
+                    allEvents.push({
+                        ...event,
+                        calendarColor: cal.color,
+                        calendarId: cal.id,
+                        calendarName: cal.name
+                    });
+                });
+            }
+        });
+        
+        // Update the calendar with all visible events
+        this.calendar.setEvents(allEvents);
+        this.updateCalendarTitle();
     }
 
     /**
@@ -535,8 +868,24 @@ class ICSViewerApp {
      */
     async handleFileSelect(e) {
         const file = e.target.files[0];
-        if (file) {
-            await this.loadFile(file);
+        if (!file) return;
+        
+        try {
+            this.showLoading();
+            const icsData = await loadICSFromFile(file);
+            const events = parseICS(icsData);
+            
+            this.addCalendar(file.name, events, `file:${file.name}`, icsData);
+            this.saveCalendarsToStorage();
+            this.showCalendar();
+            this.hideLoading();
+            
+            // Reset file input
+            this.fileInput.value = '';
+        } catch (error) {
+            console.error('Error loading calendar file:', error);
+            this.hideLoading();
+            this.showError('Failed to load calendar file: ' + error.message);
         }
     }
 
@@ -559,17 +908,22 @@ class ICSViewerApp {
     }
 
     /**
-     * Handle file drop
+     * Handle drop
      */
     async handleDrop(e) {
         e.preventDefault();
         e.stopPropagation();
         this.fileDropZone.classList.remove('drag-over');
         
-        const files = e.dataTransfer.files;
-        if (files.length > 0) {
-            await this.loadFile(files[0]);
-        }
+        const file = e.dataTransfer.files[0];
+        if (!file) return;
+        
+        // Simulate file input change
+        const dataTransfer = new DataTransfer();
+        dataTransfer.items.add(file);
+        this.fileInput.files = dataTransfer.files;
+        
+        await this.handleFileSelect({ target: this.fileInput });
     }
 
     /**
@@ -578,15 +932,7 @@ class ICSViewerApp {
     async handleURLLoad() {
         const url = this.urlInput.value.trim();
         if (!url) {
-            this.showError('Please enter a URL');
-            return;
-        }
-        
-        // Basic URL validation
-        try {
-            new URL(url);
-        } catch (e) {
-            this.showError('Please enter a valid URL');
+            this.showError('Please enter a calendar URL');
             return;
         }
         
@@ -594,323 +940,105 @@ class ICSViewerApp {
     }
 
     /**
-     * Load ICS from file
-     */
-    async loadFile(file) {
-        this.showLoading();
-        
-        try {
-            // Read file content
-            const icsData = await this.readFileAsText(file);
-            const events = await loadICSFromFile(file);
-            
-            if (events.length === 0) {
-                throw new Error('No events found in the calendar file');
-            }
-            
-            this.addCalendar(file.name, events, null, icsData);
-            this.showCalendar();
-            this.hideLoading();
-        } catch (error) {
-            this.hideLoading();
-            this.showError(error.message);
-        }
-    }
-
-    /**
-     * Read file as text
-     */
-    readFileAsText(file) {
-        return new Promise((resolve, reject) => {
-            const reader = new FileReader();
-            reader.onload = (e) => resolve(e.target.result);
-            reader.onerror = () => reject(new Error('Failed to read file'));
-            reader.readAsText(file);
-        });
-    }
-
-    /**
-     * Load ICS from URL
+     * Load calendar from URL
      */
     async loadURL(url) {
-        this.showLoading();
-        
         try {
-            // First try without CORS proxy
-            let events, icsData;
-            try {
-                const response = await fetch(url);
-                if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
-                icsData = await response.text();
-                events = await loadICSFromURL(url, false);
-            } catch (error) {
-                // If CORS error, retry with proxy
-                if (error.message === 'CORS_ERROR' || error.name === 'TypeError') {
-                    console.log('CORS detected, retrying with proxy...');
-                    const proxyUrl = `https://corsproxy.io/?${encodeURIComponent(url)}`;
-                    const response = await fetch(proxyUrl);
-                    if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
-                    icsData = await response.text();
-                    events = await loadICSFromURL(url, true);
-                } else {
-                    throw error;
-                }
-            }
+            this.showLoading();
+            const icsData = await loadICSFromURL(url);
+            const events = parseICS(icsData);
             
-            if (events.length === 0) {
-                throw new Error('No events found in the calendar');
-            }
+            // Extract calendar name from URL or use domain
+            const urlObj = new URL(url);
+            const name = urlObj.pathname.split('/').pop() || urlObj.hostname;
             
-            // Extract calendar name from URL
-            const calendarName = this.getCalendarNameFromURL(url);
-            this.addCalendar(calendarName, events, url, icsData);
+            this.addCalendar(name, events, `url:${url}`, icsData);
+            this.saveCalendarsToStorage();
             this.updateURLParameter(url);
             this.showCalendar();
             this.hideLoading();
         } catch (error) {
+            console.error('Error loading calendar from URL:', error);
             this.hideLoading();
-            this.showError(error.message);
+            this.showError('Failed to load calendar from URL: ' + error.message);
         }
     }
 
     /**
-     * Extract calendar name from URL
+     * Download all visible calendars as ICS file
      */
-    getCalendarNameFromURL(url) {
-        try {
-            const urlObj = new URL(url);
-            const pathname = urlObj.pathname;
-            const filename = pathname.split('/').pop();
-            return filename.replace('.ics', '') || 'Calendar';
-        } catch {
-            return 'Calendar';
-        }
-    }
-
-    /**
-     * Add a calendar to the list
-     */
-    addCalendar(name, events, source, icsData) {
-        const color = this.generateRandomColor();
+    downloadCalendar() {
+        // Get all visible calendars
+        const visibleCalendars = this.calendars.filter(cal => cal.visible);
         
-        const calendar = {
-            id: this.nextCalendarId++,
-            name,
-            events,
-            color,
-            visible: true,
-            source, // null for file, URL string for URL
-            icsData // Store raw ICS data for persistence
-        };
-        
-        // Add color property to each event
-        events.forEach(event => {
-            event.calendarId = calendar.id;
-            event.color = color;
-        });
-        
-        this.calendars.push(calendar);
-        this.updateCalendarList();
-        this.saveCalendarsToStorage();
-    }
-
-    /**
-     * Remove a calendar from the list
-     */
-    removeCalendar(calendarId) {
-        const index = this.calendars.findIndex(c => c.id === calendarId);
-        if (index !== -1) {
-            this.calendars.splice(index, 1);
-            this.updateCalendarList();
-            this.saveCalendarsToStorage();
-            
-            if (this.calendars.length === 0) {
-                this.showUploadSection();
-            } else {
-                this.updateCalendarView();
-            }
-        }
-    }
-
-    /**
-     * Toggle calendar visibility
-     */
-    toggleCalendarVisibility(calendarId) {
-        const calendar = this.calendars.find(c => c.id === calendarId);
-        if (calendar) {
-            calendar.visible = !calendar.visible;
-            this.updateCalendarList();
-            this.saveCalendarsToStorage();
-            this.updateCalendarView();
-        }
-    }
-
-    /**
-     * Start renaming a calendar
-     */
-    startRenameCalendar(calendarId, nameElement) {
-        const calendar = this.calendars.find(c => c.id === calendarId);
-        if (!calendar) return;
-        
-        const currentName = calendar.name;
-        const input = document.createElement('input');
-        input.type = 'text';
-        input.className = 'calendar-name-input';
-        input.value = currentName;
-        
-        // Replace the span with an input
-        nameElement.replaceWith(input);
-        input.focus();
-        input.select();
-        
-        // Save on blur or Enter key
-        const save = () => {
-            const newName = input.value.trim();
-            if (newName && newName !== currentName) {
-                calendar.name = newName;
-                this.saveCalendarsToStorage();
-            }
-            this.updateCalendarList();
-        };
-        
-        input.addEventListener('blur', save);
-        input.addEventListener('keydown', (e) => {
-            if (e.key === 'Enter') {
-                save();
-            } else if (e.key === 'Escape') {
-                this.updateCalendarList(); // Cancel and restore original
-            }
-        });
-    }
-
-    /**
-     * Save calendars to localStorage
-     */
-    saveCalendarsToStorage() {
-        // Don't save if in random-only view (not merged)
-        if (this.isRandomCalendarView && !this.parseRandomParams()?.merge) {
+        if (visibleCalendars.length === 0) {
+            this.showError('No calendars to download');
             return;
         }
         
-        try {
-            const calendarsToSave = this.calendars.map(cal => ({
-                id: cal.id,
-                name: cal.name,
-                color: cal.color,
-                visible: cal.visible,
-                source: cal.source,
-                icsData: cal.icsData
-            }));
-            
-            saveToStorage('calendars', JSON.stringify(calendarsToSave));
-            saveToStorage('nextCalendarId', this.nextCalendarId.toString());
-        } catch (error) {
-            console.error('Failed to save calendars to storage:', error);
-        }
-    }
-
-    /**
-     * Load calendars from localStorage
-     */
-    loadCalendarsFromStorage() {
-        try {
-            const savedCalendars = loadFromStorage('calendars', null);
-            const savedNextId = loadFromStorage('nextCalendarId', '1');
-            
-            if (savedCalendars) {
-                const calendarsData = JSON.parse(savedCalendars);
-                this.nextCalendarId = parseInt(savedNextId, 10);
-                
-                calendarsData.forEach(cal => {
-                    // Re-parse events from ICS data
-                    const events = parseICS(cal.icsData);
-                    
-                    // Add color to events
-                    events.forEach(event => {
-                        event.calendarId = cal.id;
-                        event.color = cal.color;
-                    });
-                    
-                    this.calendars.push({
-                        id: cal.id,
-                        name: cal.name,
-                        events,
-                        color: cal.color,
-                        visible: cal.visible,
-                        source: cal.source,
-                        icsData: cal.icsData
-                    });
-                });
-                
-                if (this.calendars.length > 0) {
-                    this.updateCalendarList();
-                    this.showCalendar();
-                }
+        // Collect all events from visible calendars
+        const allEvents = [];
+        visibleCalendars.forEach(cal => {
+            if (cal.events) {
+                allEvents.push(...cal.events);
             }
-        } catch (error) {
-            console.error('Failed to load calendars from storage:', error);
-        }
+        });
+        
+        // Generate calendar name
+        const calendarName = visibleCalendars.length === 1 
+            ? visibleCalendars[0].name 
+            : 'Combined Calendar';
+        
+        // Convert to ICS
+        const icsContent = eventsToICS(allEvents, calendarName);
+        
+        // Trigger download
+        this.triggerICSDownload(icsContent, calendarName);
     }
 
     /**
-     * Update calendar list UI
+     * Add random calendar to collection (from URL view)
      */
-    updateCalendarList() {
-        if (!this.calendarList) return;
+    addRandomCalendarToCollection() {
+        if (!this.randomCalendar) return;
         
-        this.calendarList.innerHTML = '';
+        const { config, events, icsData } = this.randomCalendar;
         
-        this.calendars.forEach(cal => {
-            const item = document.createElement('div');
-            item.className = 'calendar-list-item';
-            item.innerHTML = `
-                <div class="calendar-color-indicator" style="background-color: ${cal.color}"></div>
-                <div class="calendar-info">
-                    <span class="calendar-name" data-id="${cal.id}">${this.escapeHtml(cal.name)}</span>
-                    <span class="calendar-event-count">${cal.events.length} events</span>
-                </div>
-                <div class="calendar-actions">
-                    <button class="calendar-rename-btn" data-id="${cal.id}" aria-label="Rename calendar">
-                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                            <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
-                            <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
-                        </svg>
-                    </button>
-                    <button class="calendar-toggle-btn" data-id="${cal.id}" aria-label="${cal.visible ? 'Hide' : 'Show'} calendar">
-                        ${cal.visible ? 
-                            '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle></svg>' :
-                            '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"></path><line x1="1" y1="1" x2="23" y2="23"></line></svg>'
-                        }
-                    </button>
-                    <button class="calendar-remove-btn" data-id="${cal.id}" aria-label="Remove calendar">
-                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                            <line x1="18" y1="6" x2="6" y2="18"></line>
-                            <line x1="6" y1="6" x2="18" y2="18"></line>
-                        </svg>
-                    </button>
-                </div>
-            `;
+        // Load existing calendars from storage
+        this.loadCalendarsFromStorage();
+        
+        // Add the random calendar
+        this.addCalendar(config.name, events, `random:${config.seed}`, icsData);
+        this.saveCalendarsToStorage();
+        
+        // Exit random calendar view mode
+        this.isRandomCalendarView = false;
+        this.randomCalendar = null;
+        
+        // Update UI
+        this.renderCalendarList();
+        this.updateVisibleEvents();
+        this.showSuccess(`Calendar "${config.name}" added to your collection!`);
+        
+        // Update button text back to normal
+        this.addCalendarBtn.querySelector('span').textContent = 'Add Calendar';
+    }
+
+    /**
+     * Show success message
+     */
+    showSuccess(message) {
+        if (this.successToast) {
+            const messageEl = this.successToast.querySelector('span');
+            if (messageEl) {
+                messageEl.textContent = message;
+            }
+            this.successToast.classList.remove('hidden');
             
-            // Rename calendar
-            const nameElement = item.querySelector('.calendar-name');
-            const renameBtn = item.querySelector('.calendar-rename-btn');
-            
-            renameBtn.addEventListener('click', () => {
-                this.startRenameCalendar(cal.id, nameElement);
-            });
-            
-            // Toggle visibility
-            item.querySelector('.calendar-toggle-btn').addEventListener('click', () => {
-                this.toggleCalendarVisibility(cal.id);
-            });
-            
-            // Remove calendar
-            item.querySelector('.calendar-remove-btn').addEventListener('click', () => {
-                this.removeCalendar(cal.id);
-            });
-            
-            this.calendarList.appendChild(item);
-        });
+            setTimeout(() => {
+                this.successToast.classList.add('hidden');
+            }, 3000);
+        }
     }
 
     /**
@@ -983,6 +1111,9 @@ class ICSViewerApp {
         } else {
             this.addCalendarBtn.innerHTML = '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg><span>Add Calendar</span>';
         }
+        
+        // Render calendar list
+        this.renderCalendarList();
         
         this.updateCalendarView();
     }

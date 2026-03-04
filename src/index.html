@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="description" content="A modern ICS calendar viewer that allows you to visualize calendar events from ICS files or URLs">
     <title>TimeView - Modern Calendar Viewer</title>
+    <link rel="icon" type="image/svg+xml" href="favicon.svg">
     <link rel="stylesheet" href="css/main.css">
 </head>
 <body>
@@ -52,9 +53,9 @@
                     <span>Download</span>
                 </button>
                 <button class="settings-btn" id="settingsBtn" aria-label="Settings">
-                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"></path>
                         <circle cx="12" cy="12" r="3"></circle>
-                        <path d="M12 1v6m0 6v6m0-18a2 2 0 0 1 2 2m-2-2a2 2 0 0 0-2 2m2 18a2 2 0 0 1-2-2m2 2a2 2 0 0 0 2-2M6 6l4.24 4.24m7.52 0L22 6M6 18l4.24-4.24m7.52 0L22 18"></path>
                     </svg>
                 </button>
             </div>
@@ -100,6 +101,19 @@
                             <button class="btn btn-primary" id="urlLoadBtn">Load</button>
                         </div>
                         <p class="help-text">Note: Some URLs may have CORS restrictions. If loading fails, try uploading the file instead.</p>
+                    </div>
+
+                    <!-- Random Calendar Generator -->
+                    <div class="upload-option">
+                        <h3>Generate Random Calendar</h3>
+                        <p class="help-text">Create a test calendar with random events for demos and testing</p>
+                        <button class="btn btn-secondary" id="generateRandomBtn">
+                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <circle cx="12" cy="12" r="3"></circle>
+                                <path d="M12 1v6m0 6v6m0-18a2 2 0 0 1 2 2m-2-2a2 2 0 0 0-2 2m2 18a2 2 0 0 1-2-2m2 2a2 2 0 0 0 2-2M6 6l4.24 4.24m7.52 0L22 6M6 18l4.24-4.24m7.52 0L22 18"></path>
+                            </svg>
+                            <span>Generate Random Calendar</span>
+                        </button>
                     </div>
                 </div>
             </div>
@@ -220,6 +234,108 @@
                         <option value="0">Sunday</option>
                         <option value="1">Monday</option>
                     </select>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Random Calendar Generator Modal -->
+    <div class="modal-overlay hidden" id="randomCalendarModal">
+        <div class="modal-content modal-large" role="dialog" aria-labelledby="randomCalendarTitle">
+            <button class="modal-close" id="randomModalCloseBtn" aria-label="Close">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <line x1="18" y1="6" x2="6" y2="18"></line>
+                    <line x1="6" y1="6" x2="18" y2="18"></line>
+                </svg>
+            </button>
+            <div class="modal-body">
+                <h2 id="randomCalendarTitle">Generate Random Calendar</h2>
+                
+                <!-- Configuration Form -->
+                <div class="random-config-form" id="randomConfigForm">
+                    <div class="form-group">
+                        <label for="randomCalendarName">Calendar Name:</label>
+                        <input type="text" id="randomCalendarName" class="form-input" placeholder="Test Calendar" value="Test Calendar">
+                    </div>
+
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="randomEventCount">Number of Events:</label>
+                            <input type="number" id="randomEventCount" class="form-input" min="1" max="200" value="20">
+                        </div>
+
+                        <div class="form-group">
+                            <label for="randomSeed">Seed (optional):</label>
+                            <input type="number" id="randomSeed" class="form-input" placeholder="Leave empty for random">
+                        </div>
+                    </div>
+
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="randomDaysBefore">Days Before Today:</label>
+                            <input type="number" id="randomDaysBefore" class="form-input" min="0" max="365" value="30">
+                        </div>
+
+                        <div class="form-group">
+                            <label for="randomDaysAfter">Days After Today:</label>
+                            <input type="number" id="randomDaysAfter" class="form-input" min="0" max="365" value="60">
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label>Event Types:</label>
+                        <div class="checkbox-group">
+                            <label class="checkbox-label">
+                                <input type="checkbox" id="typeMeeting" checked>
+                                <span>Meetings (40%)</span>
+                            </label>
+                            <label class="checkbox-label">
+                                <input type="checkbox" id="typeAppointment" checked>
+                                <span>Appointments (30%)</span>
+                            </label>
+                            <label class="checkbox-label">
+                                <input type="checkbox" id="typeAllday" checked>
+                                <span>All-day events (20%)</span>
+                            </label>
+                            <label class="checkbox-label">
+                                <input type="checkbox" id="typeMultiday" checked>
+                                <span>Multi-day events (10%)</span>
+                            </label>
+                        </div>
+                    </div>
+
+                    <div class="form-actions">
+                        <button class="btn btn-primary" id="generatePreviewBtn">Generate Preview</button>
+                    </div>
+                </div>
+
+                <!-- Preview Section -->
+                <div class="random-preview hidden" id="randomPreview">
+                    <h3>Preview</h3>
+                    <div class="preview-info">
+                        <p><strong>Calendar Name:</strong> <span id="previewCalendarName"></span></p>
+                        <p><strong>Events Generated:</strong> <span id="previewEventCount"></span></p>
+                        <p><strong>Date Range:</strong> <span id="previewDateRange"></span></p>
+                    </div>
+                    <div class="preview-events" id="previewEvents">
+                        <!-- Event list will be rendered here -->
+                    </div>
+                    <div class="preview-actions">
+                        <button class="btn btn-secondary" id="regenerateBtn">
+                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"></path>
+                                <path d="M3 3v5h5"></path>
+                            </svg>
+                            <span>Regenerate</span>
+                        </button>
+                        <button class="btn btn-primary" id="addRandomCalendarBtn">
+                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <line x1="12" y1="5" x2="12" y2="19"></line>
+                                <line x1="5" y1="12" x2="19" y2="12"></line>
+                            </svg>
+                            <span>Add to My Calendars</span>
+                        </button>
+                    </div>
                 </div>
             </div>
         </div>
