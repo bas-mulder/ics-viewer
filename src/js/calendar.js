@@ -136,8 +136,8 @@ export class Calendar {
         return this.events.filter(event => {
             if (!event.start) return false;
             
-            const eventStart = event.start;
-            const eventEnd = event.end || eventStart;
+            const eventStart = event.start instanceof Date ? event.start : new Date(event.start);
+            const eventEnd = event.end ? (event.end instanceof Date ? event.end : new Date(event.end)) : eventStart;
             
             // Check if event overlaps with this day
             return eventStart <= dayEnd && eventEnd >= dayStart;
@@ -156,8 +156,8 @@ export class Calendar {
         return this.events.filter(event => {
             if (!event.start || event.allDay) return false;
             
-            const eventStart = event.start;
-            const eventEnd = event.end || eventStart;
+            const eventStart = event.start instanceof Date ? event.start : new Date(event.start);
+            const eventEnd = event.end ? (event.end instanceof Date ? event.end : new Date(event.end)) : eventStart;
             
             return eventStart <= hourEnd && eventEnd >= hourStart;
         });
@@ -175,7 +175,7 @@ export class Calendar {
         return this.events.filter(event => {
             if (!event.start || event.allDay) return false;
             
-            const eventStart = event.start;
+            const eventStart = event.start instanceof Date ? event.start : new Date(event.start);
             
             // Check if event starts within this hour
             return eventStart >= hourStart && eventStart <= hourEnd;
@@ -237,6 +237,12 @@ export class Calendar {
     createDayCell(date, isCurrentMonth) {
         const dayEl = document.createElement('div');
         dayEl.className = 'calendar-day';
+        
+        // Add data attribute for context menu
+        const year = date.getFullYear();
+        const month = String(date.getMonth() + 1).padStart(2, '0');
+        const day = String(date.getDate()).padStart(2, '0');
+        dayEl.dataset.date = `${year}-${month}-${day}`;
         
         if (!isCurrentMonth) {
             dayEl.classList.add('other-month');
@@ -331,6 +337,15 @@ export class Calendar {
                 cellEl.className = 'week-hour-cell';
                 cellEl.dataset.day = i;
                 cellEl.dataset.hour = hour;
+                
+                // Add data attributes for context menu
+                const year = date.getFullYear();
+                const month = String(date.getMonth() + 1).padStart(2, '0');
+                const day = String(date.getDate()).padStart(2, '0');
+                const hourStr = String(hour).padStart(2, '0');
+                cellEl.dataset.date = `${year}-${month}-${day}`;
+                cellEl.dataset.time = `${hourStr}:00`;
+                
                 if (isToday(date)) {
                     cellEl.classList.add('today');
                 }
@@ -385,6 +400,15 @@ export class Calendar {
             const cellEl = document.createElement('div');
             cellEl.className = 'week-hour-cell';
             cellEl.dataset.hour = hour;
+            
+            // Add data attributes for context menu
+            const year = this.currentDate.getFullYear();
+            const month = String(this.currentDate.getMonth() + 1).padStart(2, '0');
+            const day = String(this.currentDate.getDate()).padStart(2, '0');
+            const hourStr = String(hour).padStart(2, '0');
+            cellEl.dataset.date = `${year}-${month}-${day}`;
+            cellEl.dataset.time = `${hourStr}:00`;
+            
             if (isToday(this.currentDate)) {
                 cellEl.classList.add('today');
             }

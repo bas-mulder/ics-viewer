@@ -9,6 +9,12 @@
  * @returns {Array<Object>} Array of parsed events
  */
 export function parseICS(icsContent) {
+    // Validate input
+    if (!icsContent || typeof icsContent !== 'string') {
+        console.error('Invalid ICS content provided to parseICS. Type:', typeof icsContent, 'Value:', icsContent);
+        return [];
+    }
+    
     const events = [];
     const lines = unfoldLines(icsContent);
     
@@ -43,6 +49,7 @@ export function parseICS(icsContent) {
         }
     }
 
+    console.log(`Successfully parsed ${events.length} events from ICS content`);
     return events;
 }
 
@@ -280,6 +287,11 @@ function unescapeText(text) {
  * @param {File} file - File object
  * @returns {Promise<Array<Object>>} Promise resolving to array of events
  */
+/**
+ * Load ICS from a file
+ * @param {File} file - File object from input
+ * @returns {Promise<string>} Promise resolving to raw ICS content
+ */
 export async function loadICSFromFile(file) {
     return new Promise((resolve, reject) => {
         const reader = new FileReader();
@@ -287,10 +299,9 @@ export async function loadICSFromFile(file) {
         reader.onload = (e) => {
             try {
                 const content = e.target.result;
-                const events = parseICS(content);
-                resolve(events);
+                resolve(content);
             } catch (error) {
-                reject(new Error(`Failed to parse ICS file: ${error.message}`));
+                reject(new Error(`Failed to read ICS file: ${error.message}`));
             }
         };
         
@@ -306,7 +317,7 @@ export async function loadICSFromFile(file) {
  * Load ICS from a URL
  * @param {string} url - URL to ICS file
  * @param {boolean} useCorsProxy - Whether to use a CORS proxy (default: false)
- * @returns {Promise<Array<Object>>} Promise resolving to array of events
+ * @returns {Promise<string>} Promise resolving to raw ICS content
  */
 export async function loadICSFromURL(url, useCorsProxy = false) {
     try {
@@ -322,8 +333,7 @@ export async function loadICSFromURL(url, useCorsProxy = false) {
         }
         
         const content = await response.text();
-        const events = parseICS(content);
-        return events;
+        return content;
     } catch (error) {
         if (error.message.includes('CORS') || error.name === 'TypeError') {
             // If not already using proxy, suggest trying with proxy

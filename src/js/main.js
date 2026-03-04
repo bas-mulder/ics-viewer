@@ -6,6 +6,7 @@
 import { loadICSFromFile, loadICSFromURL, parseICS } from './icsParser.js';
 import { Calendar } from './calendar.js';
 import { EventModal } from './eventModal.js';
+import { EventForm } from './eventForm.js';
 import { getLocaleWeekStart, loadFromStorage, saveToStorage } from './utils.js';
 import { generateRandomEvents } from './randomGenerator.js';
 import { eventsToICS } from './icsBuilder.js';
@@ -99,6 +100,7 @@ class ICSViewerApp {
         this.todayBtn = document.getElementById('todayBtn');
         this.loadNewBtn = document.getElementById('loadNewBtn');
         this.addCalendarBtn = document.getElementById('addCalendarBtn');
+        this.addEventBtn = document.getElementById('addEventBtn');
         this.viewBtns = document.querySelectorAll('.view-btn');
         
         // Settings
@@ -116,6 +118,11 @@ class ICSViewerApp {
         this.errorMessage = document.getElementById('errorMessage');
         this.downloadBtn = document.getElementById('downloadBtn');
         this.successToast = document.getElementById('successToast');
+        
+        // Context menu
+        this.contextMenu = document.getElementById('contextMenu');
+        this.contextAddEvent = document.getElementById('contextAddEvent');
+        this.contextMenuData = null; // Stores date/time data for context menu
         
         // Random calendar modal
         this.generateRandomBtn = document.getElementById('generateRandomBtn');
@@ -187,6 +194,11 @@ class ICSViewerApp {
             }
         });
         
+        // Add event button
+        if (this.addEventBtn) {
+            this.addEventBtn.addEventListener('click', () => this.openAddEventForm());
+        }
+        
         // Download button
         if (this.downloadBtn) {
             this.downloadBtn.addEventListener('click', () => this.downloadCalendar());
@@ -225,6 +237,13 @@ class ICSViewerApp {
         this.regenerateBtn.addEventListener('click', () => this.generateRandomPreview());
         this.addRandomCalendarBtn.addEventListener('click', () => this.addGeneratedCalendar());
         
+        // Context menu
+        if (this.contextAddEvent) {
+            this.contextAddEvent.addEventListener('click', () => this.handleContextAddEvent());
+        }
+        document.addEventListener('click', () => this.hideContextMenu());
+        document.addEventListener('contextmenu', (e) => this.handleRightClick(e));
+        
         // Handle browser back/forward navigation
         window.addEventListener('popstate', (e) => this.handlePopState(e));
         
@@ -238,6 +257,11 @@ class ICSViewerApp {
     initializeModals() {
         const eventModalEl = document.getElementById('eventModal');
         this.eventModal = new EventModal(eventModalEl);
+        
+        // Initialize event form
+        this.eventForm = new EventForm((eventData, isEdit, originalEvent) => {
+            this.handleEventSave(eventData, isEdit, originalEvent);
+        });
     }
 
     /**
@@ -742,7 +766,23 @@ class ICSViewerApp {
         try {
             const saved = loadFromStorage('calendars', null);
             if (saved && Array.isArray(saved)) {
-                this.calendars = saved;
+                // Restore calendars and convert date strings back to Date objects
+                this.calendars = saved.map(cal => {
+                    // Convert event date strings back to Date objects
+                    if (cal.events && Array.isArray(cal.events)) {
+                        cal.events = cal.events.map(event => {
+                            if (event.start && typeof event.start === 'string') {
+                                event.start = new Date(event.start);
+                            }
+                            if (event.end && typeof event.end === 'string') {
+                                event.end = new Date(event.end);
+                            }
+                            return event;
+                        });
+                    }
+                    return cal;
+                });
+                
                 // Restore nextCalendarId
                 if (this.calendars.length > 0) {
                     this.nextCalendarId = Math.max(...this.calendars.map(c => c.id)) + 1;
@@ -879,6 +919,176 @@ class ICSViewerApp {
         // Update the calendar with all visible events
         this.calendar.setEvents(allEvents);
         this.updateCalendarTitle();
+    }
+
+    /**
+     * Open the event form to add a new event
+     */
+    openAddEventForm() {
+        if (!this.eventForm) {
+            console.error('Event form not initialized');
+            return;
+        }
+        
+        // If no calendars exist, create a default one
+        if (this.calendars.length === 0) {
+            const defaultCalendar = this.addCalendar('My Calendar', [], 'local:', '');
+            this.saveCalendarsToStorage();
+            this.renderCalendarList();
+        }
+        
+        this.eventForm.openForNew();
+    }
+
+    /**
+     * Handle saving an event (create or edit)
+     */
+    handleEventSave(eventData, isEdit, originalEvent) {
+        if (isEdit && originalEvent) {
+            // Edit existing event
+            this.updateEvent(originalEvent, eventData);
+        } else {
+            // Create new event
+            this.createNewEvent(eventData);
+        }
+    }
+
+    /**
+     * Create a new event and add it to the first calendar
+     */
+    createNewEvent(eventData) {
+        // Add to the first calendar (or create one if needed)
+        let targetCalendar = this.calendars[0];
+        
+        if (!targetCalendar) {
+            targetCalendar = this.addCalendar('My Calendar', [], 'local:', '');
+        }
+        
+        // Add the new event
+        targetCalendar.events.push(eventData);
+        
+        // Regenerate ICS data for the calendar
+        targetCalendar.icsData = eventsToICS(targetCalendar.events, targetCalendar.name);
+        
+        // Save and update display
+        this.saveCalendarsToStorage();
+        this.updateVisibleEvents();
+        
+        this.showSuccess('Event added successfully');
+    }
+
+    /**
+     * Update an existing event
+     */
+    updateEvent(originalEvent, newEventData) {
+        // Find the calendar containing the event
+        let targetCalendar = null;
+        let eventIndex = -1;
+        
+        for (const calendar of this.calendars) {
+            eventIndex = calendar.events.findIndex(e => e.uid === originalEvent.uid);
+            if (eventIndex !== -1) {
+                targetCalendar = calendar;
+                break;
+            }
+        }
+        
+        if (!targetCalendar || eventIndex === -1) {
+            this.showError('Event not found');
+            return;
+        }
+        
+        // Update the event
+        targetCalendar.events[eventIndex] = {
+            ...targetCalendar.events[eventIndex],
+            ...newEventData
+        };
+        
+        // Regenerate ICS data for the calendar
+        targetCalendar.icsData = eventsToICS(targetCalendar.events, targetCalendar.name);
+        
+        // Save and update display
+        this.saveCalendarsToStorage();
+        this.updateVisibleEvents();
+        
+        this.showSuccess('Event updated successfully');
+    }
+
+    /**
+     * Handle right-click on calendar cells
+     */
+    handleRightClick(e) {
+        // Check if right-click is on a calendar cell
+        const dayCell = e.target.closest('.calendar-day, .calendar-hour-cell');
+        
+        if (dayCell && !this.uploadSection.classList.contains('hidden')) {
+            return; // Don't show context menu on upload section
+        }
+        
+        if (dayCell) {
+            e.preventDefault();
+            
+            // Extract date information from the cell
+            const dateStr = dayCell.dataset.date;
+            const timeStr = dayCell.dataset.time;
+            
+            if (dateStr) {
+                this.contextMenuData = {
+                    date: dateStr,
+                    time: timeStr || null
+                };
+                
+                this.showContextMenu(e.clientX, e.clientY);
+            }
+        } else {
+            this.hideContextMenu();
+        }
+    }
+
+    /**
+     * Show context menu at position
+     */
+    showContextMenu(x, y) {
+        if (!this.contextMenu) return;
+        
+        this.contextMenu.style.left = `${x}px`;
+        this.contextMenu.style.top = `${y}px`;
+        this.contextMenu.classList.remove('hidden');
+        
+        // Adjust position if menu goes off screen
+        setTimeout(() => {
+            const rect = this.contextMenu.getBoundingClientRect();
+            const windowWidth = window.innerWidth;
+            const windowHeight = window.innerHeight;
+            
+            if (rect.right > windowWidth) {
+                this.contextMenu.style.left = `${windowWidth - rect.width - 10}px`;
+            }
+            
+            if (rect.bottom > windowHeight) {
+                this.contextMenu.style.top = `${windowHeight - rect.height - 10}px`;
+            }
+        }, 0);
+    }
+
+    /**
+     * Hide context menu
+     */
+    hideContextMenu() {
+        if (this.contextMenu) {
+            this.contextMenu.classList.add('hidden');
+        }
+    }
+
+    /**
+     * Handle context menu "Add Event" click
+     */
+    handleContextAddEvent() {
+        if (this.contextMenuData && this.eventForm) {
+            this.eventForm.openForNew(this.contextMenuData);
+            this.contextMenuData = null;
+        }
+        this.hideContextMenu();
     }
 
     /**

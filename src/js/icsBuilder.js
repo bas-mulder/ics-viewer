@@ -76,20 +76,24 @@ function foldLine(line) {
 function buildVEvent(event) {
     const lines = ['BEGIN:VEVENT'];
     
+    // Validate and convert dates if needed
+    const start = event.start instanceof Date ? event.start : new Date(event.start);
+    const end = event.end instanceof Date ? event.end : (event.end ? new Date(event.end) : null);
+    
     // Required fields
     lines.push(`UID:${event.uid}`);
     lines.push(`DTSTAMP:${formatDateTime(new Date())}`); // Current time
     
     // Start date/time
     if (event.allDay) {
-        lines.push(`DTSTART;VALUE=DATE:${formatDateTime(event.start, true)}`);
-        if (event.end) {
-            lines.push(`DTEND;VALUE=DATE:${formatDateTime(event.end, true)}`);
+        lines.push(`DTSTART;VALUE=DATE:${formatDateTime(start, true)}`);
+        if (end) {
+            lines.push(`DTEND;VALUE=DATE:${formatDateTime(end, true)}`);
         }
     } else {
-        lines.push(`DTSTART:${formatDateTime(event.start)}`);
-        if (event.end) {
-            lines.push(`DTEND:${formatDateTime(event.end)}`);
+        lines.push(`DTSTART:${formatDateTime(start)}`);
+        if (end) {
+            lines.push(`DTEND:${formatDateTime(end)}`);
         }
     }
     
@@ -145,6 +149,11 @@ function buildVEvent(event) {
  * @returns {string} Complete ICS file content
  */
 export function eventsToICS(events, calendarName = 'Calendar') {
+    // Ensure events is an array
+    if (!Array.isArray(events)) {
+        events = [];
+    }
+    
     const lines = [
         'BEGIN:VCALENDAR',
         'VERSION:2.0',
