@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Build shareable random ICS calendar URLs for TimeView">
+    <title>TimeView - Random ICS URL Builder</title>
+    <script>
+        (function applySavedTheme() {
+            try {
+                var rawTheme = localStorage.getItem('theme');
+                var savedTheme = rawTheme ? JSON.parse(rawTheme) : 'light';
+                document.documentElement.setAttribute('data-theme', savedTheme);
+            } catch (e) {
+                document.documentElement.setAttribute('data-theme', 'light');
+            }
+        })();
+    </script>
+    <link rel="icon" type="image/svg+xml" href="favicon.svg">
+    <link rel="stylesheet" href="css/main.css">
+    <link rel="stylesheet" href="css/random-builder.css">
+</head>
+<body>
+    <header class="app-header">
+        <div class="container">
+            <h1 class="app-title">TimeView</h1>
+            <div class="header-actions">
+                <a class="btn btn-secondary" href="index.html">Back to Viewer</a>
+            </div>
+        </div>
+    </header>
+
+    <main class="app-main">
+        <section class="builder-section">
+            <div class="container">
+                <div class="builder-card">
+                    <h2>Random ICS URL Builder</h2>
+                    <p class="builder-description">Build URLs for reproducible random calendars that can be shared or imported into this app.</p>
+
+                    <form id="urlBuilderForm" class="event-form">
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="builderName">Calendar Name</label>
+                                <input type="text" id="builderName" class="form-input" value="Demo Calendar">
+                            </div>
+                            <div class="form-group">
+                                <label for="builderSeed">Seed</label>
+                                <div class="builder-inline">
+                                    <input type="number" id="builderSeed" class="form-input" placeholder="Optional seed">
+                                    <button type="button" class="btn btn-secondary" id="generateSeedBtn">New</button>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="builderCount">Event Count</label>
+                                <input type="number" id="builderCount" class="form-input" min="1" max="200" value="20">
+                            </div>
+                            <div class="form-group">
+                                <label for="builderDaysBefore">Days Before Today</label>
+                                <input type="number" id="builderDaysBefore" class="form-input" min="0" max="365" value="30">
+                            </div>
+                        </div>
+
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="builderDaysAfter">Days After Today</label>
+                                <input type="number" id="builderDaysAfter" class="form-input" min="0" max="365" value="60">
+                            </div>
+                            <div class="form-group">
+                                <label>Modes</label>
+                                <div class="builder-flags">
+                                    <label class="checkbox-label"><input type="checkbox" id="builderMerge"><span>Merge with saved calendars</span></label>
+                                    <label class="checkbox-label"><input type="checkbox" id="builderDownload"><span>Direct download mode</span></label>
+                                    <label class="checkbox-label"><input type="checkbox" id="builderAutoDownload"><span>Auto-download then open viewer</span></label>
+                                    <label class="checkbox-label"><input type="checkbox" id="builderPreview"><span>Raw ICS preview mode</span></label>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="form-group">
+                            <label>Event Types</label>
+                            <div class="builder-types">
+                                <label class="checkbox-label"><input type="checkbox" class="builderType" value="meeting" checked><span>Meeting</span></label>
+                                <label class="checkbox-label"><input type="checkbox" class="builderType" value="appointment" checked><span>Appointment</span></label>
+                                <label class="checkbox-label"><input type="checkbox" class="builderType" value="allday" checked><span>All-day</span></label>
+                                <label class="checkbox-label"><input type="checkbox" class="builderType" value="multiday" checked><span>Multi-day</span></label>
+                            </div>
+                        </div>
+                    </form>
+
+                    <div class="builder-output">
+                        <h3>Generated URLs</h3>
+
+                        <div class="form-group">
+                            <label for="viewerUrlOutput">Viewer URL</label>
+                            <textarea id="viewerUrlOutput" class="form-input" rows="3" readonly></textarea>
+                            <div class="builder-actions">
+                                <button type="button" class="btn btn-primary" id="openViewerBtn">Open Viewer URL</button>
+                                <button type="button" class="btn btn-secondary" id="copyViewerBtn">Copy Viewer URL</button>
+                            </div>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="downloadUrlOutput">Download URL</label>
+                            <textarea id="downloadUrlOutput" class="form-input" rows="3" readonly></textarea>
+                            <button type="button" class="btn btn-secondary" id="copyDownloadBtn">Copy Download URL</button>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="autoDownloadUrlOutput">Auto-download URL</label>
+                            <textarea id="autoDownloadUrlOutput" class="form-input" rows="3" readonly></textarea>
+                            <button type="button" class="btn btn-secondary" id="copyAutoDownloadBtn">Copy Auto-download URL</button>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="previewUrlOutput">Raw ICS Preview URL</label>
+                            <textarea id="previewUrlOutput" class="form-input" rows="3" readonly></textarea>
+                            <button type="button" class="btn btn-secondary" id="copyPreviewBtn">Copy Preview URL</button>
+                        </div>
+
+                        <p class="builder-note">These URLs open TimeView with your random ICS configuration. For other apps, use Download URL to quickly export an ICS file.</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <script type="module" src="js/randomUrlBuilder.js"></script>
+</body>
+</html>

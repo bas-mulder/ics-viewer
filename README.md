@@ -141,6 +141,11 @@ To run the application locally:
 2. Perfect for testing, demos, or prototyping
 3. See [Generating Random Calendars](#generating-random-calendars) below for details
 
+**Option 4: Random URL Builder Page**
+1. Open `random-url-builder.html`
+2. Configure random calendar parameters with a form
+3. Copy the generated viewer/download/preview URLs for sharing
+
 ### Generating Random Calendars
 
 TimeView can generate random test calendars directly from URL parameters. This is perfect for testing, demos, and sharing reproducible calendar data.

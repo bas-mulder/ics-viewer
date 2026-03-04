@@ -427,6 +427,7 @@ class ICSViewerApp {
         
         // Check for special modes
         const download = params.get('download') === 'true';
+        const autoDownload = params.get('autodownload') === 'true';
         const preview = params.get('preview') === 'ics';
         const merge = params.get('merge') === 'true';
         
@@ -438,6 +439,7 @@ class ICSViewerApp {
             types,
             name,
             download,
+            autoDownload,
             preview,
             merge
         };
@@ -466,6 +468,11 @@ class ICSViewerApp {
                     window.location.href = url.toString();
                 }, 500);
                 return;
+            }
+
+            if (config.autoDownload) {
+                // Trigger one-click download, continue to normal viewer
+                this.triggerICSDownload(icsData, config.name);
             }
             
             if (config.preview) {
@@ -547,6 +554,7 @@ class ICSViewerApp {
                     <h2>ICS Preview: ${this.escapeHtml(calendarName)}</h2>
                     <div class="ics-preview-actions">
                         <button class="btn btn-primary" id="downloadPreviewBtn">Download ICS</button>
+                        <button class="btn btn-secondary" id="copyPreviewIcsBtn">Copy Raw ICS</button>
                         <button class="btn btn-secondary" id="viewPreviewBtn">View in Calendar</button>
                     </div>
                 </div>
@@ -559,6 +567,15 @@ class ICSViewerApp {
         // Add event listeners
         document.getElementById('downloadPreviewBtn').addEventListener('click', () => {
             this.triggerICSDownload(icsContent, calendarName);
+        });
+
+        document.getElementById('copyPreviewIcsBtn').addEventListener('click', async () => {
+            try {
+                await navigator.clipboard.writeText(icsContent);
+                this.showSuccess('Raw ICS copied to clipboard');
+            } catch (error) {
+                this.showError('Could not copy ICS to clipboard');
+            }
         });
         
         document.getElementById('viewPreviewBtn').addEventListener('click', () => {
@@ -1902,7 +1919,7 @@ class ICSViewerApp {
             this.hideRandomCalendarModal();
             return;
         }
-        if (!this.eventForm.modal.classList.contains('hidden')) {
+        if (this.eventForm && this.eventForm.modal && !this.eventForm.modal.classList.contains('hidden')) {
             this.eventForm.close();
         }
     }

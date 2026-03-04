@@ -214,6 +214,12 @@
     margin-bottom: 0;
 }
 
+.random-actions {
+    display: flex;
+    gap: var(--space-sm);
+    flex-wrap: wrap;
+}
+
 /* Buttons */
 .btn {
     display: inline-flex;
@@ -779,4 +785,3 @@
         margin: 1rem;
     }
 }
-
