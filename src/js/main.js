@@ -311,7 +311,19 @@ class ICSViewerApp {
         } else {
             // Normal flow: load saved calendars and URL parameter
             this.loadCalendarsFromStorage();
-            this.loadFromURLParameter();
+            
+            // Check if there's a URL parameter calendar to load
+            const urlParams = new URLSearchParams(window.location.search);
+            const calendarURL = urlParams.get('calendar');
+            
+            if (calendarURL) {
+                // Load calendar from URL parameter
+                await this.loadFromURLParameter();
+            } else if (this.calendars.length > 0) {
+                // If there are saved calendars and no URL parameter, show calendar view
+                this.showCalendar();
+            }
+            // Otherwise, stay on upload section (default)
         }
     }
 
