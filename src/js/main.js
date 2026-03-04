@@ -360,6 +360,7 @@ class ICSViewerApp {
     showCalendar() {
         this.uploadSection.classList.add('hidden');
         this.calendarSection.classList.remove('hidden');
+        this.loadNewBtn.classList.remove('hidden'); // Show button when calendar is visible
         
         // Initialize or update calendar
         if (!this.calendar) {
@@ -381,6 +382,7 @@ class ICSViewerApp {
     showUploadSection() {
         this.calendarSection.classList.add('hidden');
         this.uploadSection.classList.remove('hidden');
+        this.loadNewBtn.classList.add('hidden'); // Hide button when upload is visible
         
         // Reset inputs
         this.fileInput.value = '';

@@ -13,6 +13,13 @@
         <div class="container">
             <h1 class="app-title">ICS Calendar Viewer</h1>
             <div class="header-actions">
+                <button class="btn btn-secondary hidden" id="loadNewBtn" aria-label="Load New Calendar">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"></path>
+                        <path d="M3 3v5h5"></path>
+                    </svg>
+                    <span>Load New Calendar</span>
+                </button>
                 <button class="theme-toggle-btn" id="themeToggleBtn" aria-label="Toggle theme">
                     <svg class="sun-icon" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                         <circle cx="12" cy="12" r="5"></circle>
@@ -117,11 +124,6 @@
                         <!-- Calendar will be dynamically rendered here -->
                     </div>
                 </div>
-
-                <!-- Actions -->
-                <div class="calendar-actions">
-                    <button class="btn btn-secondary" id="loadNewBtn">Load Different Calendar</button>
-                </div>
             </div>
         </section>
 
@@ -181,6 +183,38 @@
             </div>
         </div>
     </div>
+
+    <!-- Footer -->
+    <footer class="app-footer">
+        <div class="container">
+            <div class="footer-content">
+                <div class="footer-section">
+                    <h3>ICS Calendar Viewer</h3>
+                    <p>A modern, lightweight tool for viewing ICS calendar files</p>
+                </div>
+                <div class="footer-section">
+                    <h4>Features</h4>
+                    <ul>
+                        <li>Multiple calendar views</li>
+                        <li>Dark/Light mode</li>
+                        <li>URL sharing support</li>
+                        <li>Zero dependencies</li>
+                    </ul>
+                </div>
+                <div class="footer-section">
+                    <h4>Resources</h4>
+                    <ul>
+                        <li><a href="https://github.com/bas-mulder/ics-viewer" target="_blank" rel="noopener noreferrer">GitHub Repository</a></li>
+                        <li><a href="https://github.com/bas-mulder/ics-viewer/issues" target="_blank" rel="noopener noreferrer">Report an Issue</a></li>
+                        <li><a href="https://datatracker.ietf.org/doc/html/rfc5545" target="_blank" rel="noopener noreferrer">ICS Format (RFC 5545)</a></li>
+                    </ul>
+                </div>
+            </div>
+            <div class="footer-bottom">
+                <p>&copy; 2026 Bas Mulder. Built with vanilla JavaScript, CSS, and HTML.</p>
+            </div>
+        </div>
+    </footer>
 
     <!-- Scripts -->
     <script type="module" src="js/main.js"></script>
