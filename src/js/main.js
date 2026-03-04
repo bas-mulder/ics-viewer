@@ -7,6 +7,8 @@ import { loadICSFromFile, loadICSFromURL, parseICS } from './icsParser.js';
 import { Calendar } from './calendar.js';
 import { EventModal } from './eventModal.js';
 import { getLocaleWeekStart, loadFromStorage, saveToStorage } from './utils.js';
+import { generateRandomEvents } from './randomGenerator.js';
+import { eventsToICS } from './icsBuilder.js';
 
 class ICSViewerApp {
     constructor() {
@@ -15,14 +17,17 @@ class ICSViewerApp {
         this.nextCalendarId = 1;
         this.weekStartsOn = this.loadWeekStartPreference();
         this.currentTheme = this.loadThemePreference();
+        this.randomCalendar = null; // Stores random calendar config if viewing one
+        this.isRandomCalendarView = false; // Flag for random calendar mode
         
         this.initializeTheme();
         this.initializeElements();
         this.setupEventListeners();
         this.initializeModals();
         this.loadCalendarListState(); // Load calendar list collapsed state
-        this.loadCalendarsFromStorage(); // Load saved calendars
-        this.loadFromURLParameter(); // Check if URL has a calendar parameter
+        
+        // Check for random calendar first
+        this.handleRandomCalendarInit();
     }
 
     /**
@@ -109,6 +114,8 @@ class ICSViewerApp {
         this.loadingOverlay = document.getElementById('loadingOverlay');
         this.errorToast = document.getElementById('errorToast');
         this.errorMessage = document.getElementById('errorMessage');
+        this.downloadBtn = document.getElementById('downloadBtn');
+        this.successToast = document.getElementById('successToast');
     }
 
     /**
@@ -146,7 +153,18 @@ class ICSViewerApp {
         this.nextBtn.addEventListener('click', () => this.navigateNext());
         this.todayBtn.addEventListener('click', () => this.navigateToday());
         this.loadNewBtn.addEventListener('click', () => this.showUploadSection());
-        this.addCalendarBtn.addEventListener('click', () => this.showUploadSection());
+        this.addCalendarBtn.addEventListener('click', () => {
+            if (this.isRandomCalendarView) {
+                this.addRandomCalendarToCollection();
+            } else {
+                this.showUploadSection();
+            }
+        });
+        
+        // Download button
+        if (this.downloadBtn) {
+            this.downloadBtn.addEventListener('click', () => this.downloadCalendar());
+        }
         
         // Calendar list toggle
         this.calendarListToggle.addEventListener('click', () => this.toggleCalendarList());
@@ -243,6 +261,273 @@ class ICSViewerApp {
             this.calendar.setWeekStartsOn(this.weekStartsOn);
             this.updateCalendarTitle();
         }
+    }
+
+    /**
+     * Initialize and handle random calendar from URL params
+     */
+    async handleRandomCalendarInit() {
+        const randomConfig = this.parseRandomParams();
+        if (randomConfig) {
+            await this.handleRandomCalendar(randomConfig);
+        } else {
+            // Normal flow: load saved calendars and URL parameter
+            this.loadCalendarsFromStorage();
+            this.loadFromURLParameter();
+        }
+    }
+
+    /**
+     * Parse random calendar generation parameters from URL
+     */
+    parseRandomParams() {
+        const params = new URLSearchParams(window.location.search);
+        
+        if (params.get('random') !== 'true') {
+            return null;
+        }
+        
+        // Parse and validate parameters
+        const seed = parseInt(params.get('seed')) || Date.now();
+        const count = Math.min(200, Math.max(1, parseInt(params.get('count')) || 20));
+        const daysBefore = Math.max(0, parseInt(params.get('daysBefore')) || 30);
+        const daysAfter = Math.max(0, parseInt(params.get('daysAfter')) || 30);
+        const name = params.get('name') || 'Random Calendar';
+        
+        // Parse event types
+        const typesParam = params.get('types');
+        const validTypes = ['meeting', 'appointment', 'allday', 'multiday'];
+        let types = validTypes; // Default: all types
+        
+        if (typesParam) {
+            const requestedTypes = typesParam.split(',').map(t => t.trim().toLowerCase());
+            types = requestedTypes.filter(t => validTypes.includes(t));
+            if (types.length === 0) types = validTypes; // Fallback if all invalid
+        }
+        
+        // Check for special modes
+        const download = params.get('download') === 'true';
+        const preview = params.get('preview') === 'ics';
+        const merge = params.get('merge') === 'true';
+        
+        return {
+            seed,
+            count,
+            daysBefore,
+            daysAfter,
+            types,
+            name,
+            download,
+            preview,
+            merge
+        };
+    }
+
+    /**
+     * Handle random calendar generation based on URL parameters
+     */
+    async handleRandomCalendar(config) {
+        this.showLoading();
+        
+        try {
+            // Generate events
+            const events = await generateRandomEvents(config);
+            const icsData = eventsToICS(events, config.name);
+            
+            // Handle different modes
+            if (config.download) {
+                // Trigger download, then redirect to viewer
+                this.triggerICSDownload(icsData, config.name);
+                
+                // Wait a moment, then redirect to viewer (without download param)
+                setTimeout(() => {
+                    const url = new URL(window.location);
+                    url.searchParams.delete('download');
+                    window.location.href = url.toString();
+                }, 500);
+                return;
+            }
+            
+            if (config.preview) {
+                // Show raw ICS in page
+                this.showICSPreview(icsData, config.name);
+                this.hideLoading();
+                return;
+            }
+            
+            // Display mode: Show in calendar viewer
+            this.isRandomCalendarView = true;
+            this.randomCalendar = { config, events, icsData };
+            
+            if (config.merge) {
+                // Merge with localStorage calendars
+                this.loadCalendarsFromStorage(); // Load existing
+                this.addCalendar(config.name, events, `random:${config.seed}`, icsData);
+            } else {
+                // Isolated mode: only show random calendar
+                this.calendars = []; // Don't load from storage
+                this.addCalendar(config.name, events, `random:${config.seed}`, icsData);
+            }
+            
+            this.showCalendar();
+            this.hideLoading();
+            
+        } catch (error) {
+            console.error('Failed to generate random calendar:', error);
+            this.hideLoading();
+            this.showError('Failed to generate random calendar: ' + error.message);
+        }
+    }
+
+    /**
+     * Trigger download of ICS file
+     */
+    triggerICSDownload(icsContent, calendarName) {
+        const blob = new Blob([icsContent], { 
+            type: 'text/calendar;charset=utf-8' 
+        });
+        
+        const link = document.createElement('a');
+        link.href = URL.createObjectURL(blob);
+        
+        // Generate filename: calendar-name-timestamp.ics
+        const filename = `${calendarName.replace(/[^a-z0-9]/gi, '-').toLowerCase()}-${Date.now()}.ics`;
+        link.download = filename;
+        
+        // Trigger download
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        
+        // Cleanup
+        URL.revokeObjectURL(link.href);
+    }
+
+    /**
+     * Display raw ICS content as plain text
+     */
+    showICSPreview(icsContent, calendarName) {
+        // Hide normal sections
+        this.uploadSection.classList.add('hidden');
+        this.calendarSection.classList.add('hidden');
+        
+        // Create or update preview container
+        let previewContainer = document.getElementById('icsPreview');
+        if (!previewContainer) {
+            // Create if doesn't exist
+            previewContainer = document.createElement('div');
+            previewContainer.id = 'icsPreview';
+            previewContainer.className = 'ics-preview-container';
+            document.querySelector('.app-main').appendChild(previewContainer);
+        }
+        
+        previewContainer.innerHTML = `
+            <div class="container">
+                <div class="ics-preview-header">
+                    <h2>ICS Preview: ${this.escapeHtml(calendarName)}</h2>
+                    <div class="ics-preview-actions">
+                        <button class="btn btn-primary" id="downloadPreviewBtn">Download ICS</button>
+                        <button class="btn btn-secondary" id="viewPreviewBtn">View in Calendar</button>
+                    </div>
+                </div>
+                <pre class="ics-preview-content"><code>${this.escapeHtml(icsContent)}</code></pre>
+            </div>
+        `;
+        
+        previewContainer.classList.remove('hidden');
+        
+        // Add event listeners
+        document.getElementById('downloadPreviewBtn').addEventListener('click', () => {
+            this.triggerICSDownload(icsContent, calendarName);
+        });
+        
+        document.getElementById('viewPreviewBtn').addEventListener('click', () => {
+            const url = new URL(window.location);
+            url.searchParams.delete('preview');
+            window.location.href = url.toString();
+        });
+    }
+
+    /**
+     * Save currently viewed random calendar to localStorage
+     */
+    addRandomCalendarToCollection() {
+        if (!this.randomCalendar) return;
+        
+        const { config, events, icsData } = this.randomCalendar;
+        
+        // Clear random view mode
+        this.isRandomCalendarView = false;
+        this.randomCalendar = null;
+        
+        // Load existing calendars from storage
+        this.calendars = [];
+        this.loadCalendarsFromStorage();
+        
+        // Add this calendar (set source to null = saved calendar)
+        this.addCalendar(config.name, events, null, icsData);
+        
+        // Clear URL parameters
+        const url = new URL(window.location);
+        url.searchParams.delete('random');
+        url.searchParams.delete('seed');
+        url.searchParams.delete('count');
+        url.searchParams.delete('daysBefore');
+        url.searchParams.delete('daysAfter');
+        url.searchParams.delete('types');
+        url.searchParams.delete('name');
+        url.searchParams.delete('merge');
+        window.history.replaceState({}, '', url);
+        
+        this.showCalendar();
+        
+        // Show success message
+        this.showSuccess('Calendar added to your collection!');
+    }
+
+    /**
+     * Download visible calendar(s) as ICS file
+     */
+    downloadCalendar() {
+        const visibleCalendars = this.calendars.filter(c => c.visible);
+        
+        if (visibleCalendars.length === 0) {
+            this.showError('No calendars to download');
+            return;
+        }
+        
+        // Combine events from all visible calendars
+        const allEvents = visibleCalendars.flatMap(c => c.events);
+        
+        // Generate calendar name
+        const calendarName = visibleCalendars.length === 1
+            ? visibleCalendars[0].name
+            : 'Combined Calendar';
+        
+        // Generate ICS
+        const icsContent = eventsToICS(allEvents, calendarName);
+        
+        // Trigger download
+        this.triggerICSDownload(icsContent, calendarName);
+    }
+
+    /**
+     * Show success toast message
+     */
+    showSuccess(message) {
+        if (!this.successToast) return;
+        
+        const messageEl = this.successToast.querySelector('span');
+        if (messageEl) {
+            messageEl.textContent = message;
+        }
+        
+        this.successToast.classList.remove('hidden');
+        
+        // Auto-hide after 3 seconds
+        setTimeout(() => {
+            this.successToast.classList.add('hidden');
+        }, 3000);
     }
 
     /**
@@ -502,6 +787,11 @@ class ICSViewerApp {
      * Save calendars to localStorage
      */
     saveCalendarsToStorage() {
+        // Don't save if in random-only view (not merged)
+        if (this.isRandomCalendarView && !this.parseRandomParams()?.merge) {
+            return;
+        }
+        
         try {
             const calendarsToSave = this.calendars.map(cal => ({
                 id: cal.id,
@@ -682,6 +972,18 @@ class ICSViewerApp {
         this.loadNewBtn.classList.add('hidden'); // Hide "Load New" when viewing calendar
         this.addCalendarBtn.classList.remove('hidden'); // Show "Add Calendar" button
         
+        // Show download button
+        if (this.downloadBtn) {
+            this.downloadBtn.classList.remove('hidden');
+        }
+        
+        // Update button text based on random calendar mode
+        if (this.isRandomCalendarView) {
+            this.addCalendarBtn.innerHTML = '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg><span>Add to My Calendars</span>';
+        } else {
+            this.addCalendarBtn.innerHTML = '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg><span>Add Calendar</span>';
+        }
+        
         this.updateCalendarView();
     }
 
@@ -740,6 +1042,11 @@ class ICSViewerApp {
         this.uploadSection.classList.remove('hidden');
         this.loadNewBtn.classList.add('hidden');
         this.addCalendarBtn.classList.add('hidden');
+        
+        // Hide download button
+        if (this.downloadBtn) {
+            this.downloadBtn.classList.add('hidden');
+        }
         
         // Reset inputs
         this.fileInput.value = '';

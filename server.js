@@ -25,7 +25,16 @@ const MIME_TYPES = {
 };
 
 const server = http.createServer((req, res) => {
-    let filePath = path.join(PUBLIC_DIR, req.url === '/' ? 'index.html' : req.url);
+    // Parse URL to handle query parameters
+    const url = new URL(req.url, `http://${req.headers.host}`);
+    let requestPath = url.pathname;
+    
+    // Default to index.html for root path
+    if (requestPath === '/') {
+        requestPath = '/index.html';
+    }
+    
+    let filePath = path.join(PUBLIC_DIR, requestPath);
     
     const extname = path.extname(filePath);
     const contentType = MIME_TYPES[extname] || 'application/octet-stream';

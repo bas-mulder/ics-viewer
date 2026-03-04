@@ -7,6 +7,7 @@ A modern, lightweight web application for viewing ICS (iCalendar) files. Built w
 - **Multiple Input Methods**
   - Upload local ICS files via drag-and-drop or file picker
   - Load calendars from remote URLs
+  - Generate random test calendars with URL parameters
 
 - **Multiple Calendar Views**
   - Month view: Traditional calendar grid
@@ -35,6 +36,15 @@ A modern, lightweight web application for viewing ICS (iCalendar) files. Built w
   - Share calendar views with others via URL
   - Browser back/forward navigation support
   - Bookmark specific calendars
+  - Generate reproducible random calendars with seeds
+
+- **Random Calendar Generation**
+  - Generate test calendars with configurable parameters
+  - Seeded randomness for reproducible results
+  - Multiple event types: meetings, appointments, all-day, multi-day
+  - Realistic event data with attendees, locations, descriptions
+  - Download or view generated calendars
+  - Perfect for testing and demos
 
 - **Modern Design**
   - Clean, sleek interface with custom CSS
@@ -44,6 +54,7 @@ A modern, lightweight web application for viewing ICS (iCalendar) files. Built w
   - Optimized for iOS and Android devices
   - Smooth animations and transitions
   - Accessibility-friendly with keyboard navigation
+  - Download calendars as ICS files
 
 - **Zero Dependencies**
   - Pure vanilla JavaScript (ES6+)
@@ -125,6 +136,143 @@ To run the application locally:
 
 **Note on CORS**: Some URLs may have CORS (Cross-Origin Resource Sharing) restrictions. The app will automatically attempt to use a CORS proxy if the direct request fails. If both methods fail, you can download the file and upload it manually.
 
+**Option 3: Generate Random Calendar**
+1. Use URL parameters to generate a test calendar with random events
+2. Perfect for testing, demos, or prototyping
+3. See [Generating Random Calendars](#generating-random-calendars) below for details
+
+### Generating Random Calendars
+
+TimeView can generate random test calendars directly from URL parameters. This is perfect for testing, demos, and sharing reproducible calendar data.
+
+#### Basic Usage
+
+**Simple Random Calendar (20 events):**
+```
+?random=true
+```
+
+**Reproducible Calendar (with seed):**
+```
+?random=true&seed=42
+```
+Using the same seed always generates the same events - perfect for demos and bug reports!
+
+#### URL Parameters
+
+| Parameter | Type | Default | Description |
+|-----------|------|---------|-------------|
+| `random` | boolean | - | Must be `true` to enable random generation |
+| `seed` | number | timestamp | Seed for reproducible randomness (0-2147483647) |
+| `count` | number | 20 | Number of events to generate (1-200) |
+| `daysBefore` | number | 30 | Days before today to generate events |
+| `daysAfter` | number | 30 | Days after today to generate events |
+| `types` | string | all | Comma-separated event types (see below) |
+| `name` | string | "Random Calendar" | Calendar display name |
+| `merge` | boolean | false | Merge with your saved calendars |
+| `download` | boolean | false | Immediately download ICS file |
+| `preview` | string | - | Set to `ics` to preview raw ICS format |
+
+#### Event Types
+
+Specify event types with the `types` parameter:
+
+- **`meeting`** - Team meetings, standups, planning sessions
+  - Duration: 30 minutes to 2 hours
+  - Time: Weighted toward business hours (9am-5pm)
+  - Includes: 2-5 attendees, conference rooms, organizer
+  - Examples: "Team Standup", "Sprint Planning", "Client Demo"
+
+- **`appointment`** - Personal appointments, 1-on-1s
+  - Duration: 15 minutes to 1 hour
+  - Time: Varied throughout the day
+  - Includes: 0-1 attendees, varied locations
+  - Examples: "Dentist Appointment", "Coffee with Alex", "Doctor Visit"
+
+- **`allday`** - All-day events like holidays, birthdays, deadlines
+  - Duration: Full day (no specific time)
+  - No location or attendees
+  - Examples: "Company Holiday", "Birthday: Jordan", "Project Deadline"
+
+- **`multiday`** - Multi-day events like conferences, vacations
+  - Duration: 2-5 days
+  - Detailed descriptions and locations
+  - Examples: "Annual Conference", "Team Offsite", "Training Workshop"
+
+**Examples:**
+```
+# Only meetings and appointments
+?random=true&types=meeting,appointment
+
+# Only all-day events
+?random=true&types=allday
+
+# All types (default)
+?random=true&types=meeting,appointment,allday,multiday
+```
+
+#### Advanced Examples
+
+**Next Month Planning Calendar:**
+```
+?random=true&seed=123&count=30&daysBefore=0&daysAfter=30&types=meeting&name=Next%20Month%20Plan
+```
+Generates 30 meetings for the next 30 days only.
+
+**Demo Calendar (Reproducible):**
+```
+?random=true&seed=42&count=50&name=Demo%20Calendar
+```
+Always generates the same 50 events - perfect for demos and screenshots.
+
+**Past Week Review:**
+```
+?random=true&daysBefore=7&daysAfter=0&count=15
+```
+Generates 15 events only in the past 7 days.
+
+**Merge with Existing Calendars:**
+```
+?random=true&seed=99&count=10&merge=true
+```
+Adds 10 random events alongside your already-loaded calendars.
+
+#### Download Modes
+
+**Direct Download:**
+```
+?random=true&seed=42&count=25&download=true
+```
+Immediately downloads the ICS file, then shows the calendar viewer.
+
+**Preview Raw ICS:**
+```
+?random=true&seed=42&preview=ics
+```
+Displays the raw ICS file content with options to download or view in calendar.
+
+#### Using Generated Calendars
+
+1. **Viewing Only**
+   - Generated calendars are shown in isolation (not saved to localStorage)
+   - Perfect for quick testing without cluttering your saved calendars
+   - URL parameters stay in the address bar for bookmarking/sharing
+
+2. **Saving to Your Collection**
+   - Click "Add to My Calendars" button in the header
+   - The random calendar is saved to localStorage
+   - Now persists across sessions like uploaded calendars
+
+3. **Downloading**
+   - Click "Download" button to save as ICS file
+   - Import into Google Calendar, Outlook, Apple Calendar, etc.
+   - File naming: `{calendar-name}-{timestamp}.ics`
+
+4. **Sharing**
+   - Copy the URL to share the exact same random calendar
+   - Same seed = identical events for everyone
+   - Great for bug reports and reproducible test cases
+
 ### Navigating the Calendar
 
 - **Theme Toggle**: Click the sun/moon icon to switch between light and dark mode
@@ -162,6 +310,29 @@ When you load a calendar from a URL, the calendar URL is automatically added to 
 - **Reload the page** and the calendar will automatically load
 
 Example: `https://yourdomain.com/ics-viewer/?calendar=https://example.com/events.ics`
+
+### Downloading Calendars
+
+The **Download** button (in the header) exports your visible calendars as an ICS file.
+
+**Single Calendar:**
+- Downloads with the original calendar name
+- Example: `team-calendar-1709566801234.ics`
+
+**Multiple Calendars:**
+- Combines all visible calendars into one file
+- Named "Combined Calendar"
+- Hidden calendars (toggled off) are excluded
+
+**Compatibility:**
+Downloaded ICS files work with:
+- Google Calendar
+- Apple Calendar / iCal
+- Microsoft Outlook
+- Mozilla Thunderbird
+- Any RFC 5545 compliant calendar application
+
+**Tip:** Toggle calendar visibility (eye icon) to control which calendars are included in the download.
 
 ### Mobile Usage
 

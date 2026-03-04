@@ -1,0 +1,26 @@
+{
+  "businessHours": {
+    "weight": 0.60,
+    "startHour": 9,
+    "endHour": 17,
+    "description": "Standard business hours 9am-5pm"
+  },
+  "earlyLate": {
+    "weight": 0.25,
+    "ranges": [
+      { "startHour": 7, "endHour": 9 },
+      { "startHour": 17, "endHour": 20 }
+    ],
+    "description": "Early morning or evening"
+  },
+  "other": {
+    "weight": 0.15,
+    "ranges": [
+      { "startHour": 6, "endHour": 7 },
+      { "startHour": 20, "endHour": 22 }
+    ],
+    "description": "Off-hours"
+  },
+  "weekendReduction": 0.2,
+  "timeRounding": 15
+}

@@ -1,0 +1,33 @@
+{
+  "firstNames": [
+    "Alex", "Jordan", "Taylor", "Morgan", "Casey",
+    "Riley", "Avery", "Quinn", "Sage", "Reese",
+    "Cameron", "Blake", "Skylar", "Dakota", "Parker",
+    "Drew", "Finley", "Harper", "Rowan", "Emerson",
+    "Kai", "River", "Phoenix", "Ash", "Charlie",
+    "Sam", "Pat", "Jamie", "Robin", "Adrian",
+    "Logan", "Kendall", "Peyton", "Bailey", "Ryan",
+    "Hayden", "Micah", "Sawyer", "Ellis", "Jules",
+    "Lou", "Corey", "Jessie", "Terry", "Devon",
+    "Dana", "Lee", "Max", "Sasha", "Arin"
+  ],
+  "lastNames": [
+    "Smith", "Johnson", "Williams", "Brown", "Jones",
+    "Garcia", "Miller", "Davis", "Rodriguez", "Martinez",
+    "Hernandez", "Lopez", "Gonzalez", "Wilson", "Anderson",
+    "Thomas", "Taylor", "Moore", "Jackson", "Martin",
+    "Lee", "Perez", "Thompson", "White", "Harris",
+    "Sanchez", "Clark", "Ramirez", "Lewis", "Robinson",
+    "Walker", "Young", "Allen", "King", "Wright",
+    "Scott", "Torres", "Nguyen", "Hill", "Flores",
+    "Green", "Adams", "Nelson", "Baker", "Hall",
+    "Rivera", "Campbell", "Mitchell", "Carter", "Roberts"
+  ],
+  "emailDomains": [
+    "company.com",
+    "example.com",
+    "business.com",
+    "email.com",
+    "work.com"
+  ]
+}
