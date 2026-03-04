@@ -1,0 +1,18 @@
+{
+  "name": "ics-viewer",
+  "version": "1.0.0",
+  "description": "A modern ICS calendar viewer for GitHub Pages",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "serve": "python3 -m http.server 8000 --directory src"
+  },
+  "keywords": [
+    "ics",
+    "calendar",
+    "viewer",
+    "icalendar"
+  ],
+  "author": "",
+  "license": "MIT"
+}

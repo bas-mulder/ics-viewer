@@ -76,8 +76,8 @@ class ICSViewerApp {
         this.fileDropZone.addEventListener('dragleave', (e) => this.handleDragLeave(e));
         this.fileDropZone.addEventListener('drop', (e) => this.handleDrop(e));
         this.fileDropZone.addEventListener('click', (e) => {
-            // Only trigger file input if clicking on the drop zone itself, not child elements
-            if (e.target === this.fileDropZone || e.target.closest('.file-drop-zone') === this.fileDropZone && e.target !== this.fileSelectBtn) {
+            // Only trigger file input if not clicking on a button
+            if (!e.target.closest('button')) {
                 this.fileInput.click();
             }
         });
