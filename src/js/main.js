@@ -823,7 +823,7 @@ class ICSViewerApp {
         
         this.calendarList.innerHTML = this.calendars.map(cal => `
             <div class="calendar-list-item" data-calendar-id="${cal.id}">
-                <div class="calendar-color" style="background-color: ${cal.color}"></div>
+                <input type="color" class="calendar-color-picker" value="${cal.color}" data-calendar-id="${cal.id}" title="Change calendar color">
                 <div class="calendar-info">
                     <div class="calendar-name">${this.escapeHtml(cal.name)}</div>
                     <div class="calendar-source">${this.formatCalendarSource(cal.source)}</div>
@@ -847,7 +847,15 @@ class ICSViewerApp {
             </div>
         `).join('');
         
-        // Add event listeners
+        // Add event listeners for color pickers
+        this.calendarList.querySelectorAll('.calendar-color-picker').forEach(picker => {
+            picker.addEventListener('change', (e) => {
+                const id = parseInt(picker.dataset.calendarId);
+                this.changeCalendarColor(id, e.target.value);
+            });
+        });
+        
+        // Add event listeners for toggle buttons
         this.calendarList.querySelectorAll('[data-action="toggle"]').forEach(btn => {
             btn.addEventListener('click', (e) => {
                 e.stopPropagation();
@@ -856,6 +864,7 @@ class ICSViewerApp {
             });
         });
         
+        // Add event listeners for remove buttons
         this.calendarList.querySelectorAll('[data-action="remove"]').forEach(btn => {
             btn.addEventListener('click', (e) => {
                 e.stopPropagation();
@@ -895,6 +904,23 @@ class ICSViewerApp {
     }
 
     /**
+     * Change calendar color
+     */
+    changeCalendarColor(id, newColor) {
+        const calendar = this.calendars.find(cal => cal.id === id);
+        if (calendar) {
+            calendar.color = newColor;
+            this.saveCalendarsToStorage();
+            // Clear events first, then update to force a complete re-render
+            this.calendar.setEvents([]);
+            // Use setTimeout to ensure the clear happens before the update
+            setTimeout(() => {
+                this.updateVisibleEvents();
+            }, 0);
+        }
+    }
+
+    /**
      * Update visible events in the calendar view
      */
     updateVisibleEvents() {
@@ -924,7 +950,7 @@ class ICSViewerApp {
     /**
      * Open the event form to add a new event
      */
-    openAddEventForm() {
+    openAddEventForm(prefilledData = {}) {
         if (!this.eventForm) {
             console.error('Event form not initialized');
             return;
@@ -937,7 +963,7 @@ class ICSViewerApp {
             this.renderCalendarList();
         }
         
-        this.eventForm.openForNew();
+        this.eventForm.openForNew(prefilledData, this.calendars);
     }
 
     /**
@@ -954,18 +980,26 @@ class ICSViewerApp {
     }
 
     /**
-     * Create a new event and add it to the first calendar
+     * Create a new event and add it to the specified calendar
      */
     createNewEvent(eventData) {
-        // Add to the first calendar (or create one if needed)
-        let targetCalendar = this.calendars[0];
+        // Find the target calendar by ID
+        let targetCalendar = this.calendars.find(cal => cal.id === parseInt(eventData.calendarId));
         
         if (!targetCalendar) {
-            targetCalendar = this.addCalendar('My Calendar', [], 'local:', '');
+            // Fallback to first calendar if calendar not found
+            targetCalendar = this.calendars[0];
+            
+            if (!targetCalendar) {
+                targetCalendar = this.addCalendar('My Calendar', [], 'local:', '');
+            }
         }
         
+        // Remove calendarId from event data (it's not part of the event structure)
+        const { calendarId, ...eventWithoutCalendarId } = eventData;
+        
         // Add the new event
-        targetCalendar.events.push(eventData);
+        targetCalendar.events.push(eventWithoutCalendarId);
         
         // Regenerate ICS data for the calendar
         targetCalendar.icsData = eventsToICS(targetCalendar.events, targetCalendar.name);
@@ -1085,7 +1119,7 @@ class ICSViewerApp {
      */
     handleContextAddEvent() {
         if (this.contextMenuData && this.eventForm) {
-            this.eventForm.openForNew(this.contextMenuData);
+            this.eventForm.openForNew(this.contextMenuData, this.calendars);
             this.contextMenuData = null;
         }
         this.hideContextMenu();

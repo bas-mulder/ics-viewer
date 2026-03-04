@@ -97,6 +97,36 @@
     background-color: var(--color-bg-tertiary);
 }
 
+.calendar-color-picker {
+    width: 40px;
+    height: 40px;
+    border: 2px solid var(--color-border);
+    border-radius: var(--radius-md);
+    cursor: pointer;
+    flex-shrink: 0;
+    transition: border-color var(--transition-fast), transform var(--transition-fast);
+    padding: 2px;
+}
+
+.calendar-color-picker:hover {
+    border-color: var(--color-primary);
+    transform: scale(1.05);
+}
+
+.calendar-color-picker::-webkit-color-swatch-wrapper {
+    padding: 0;
+}
+
+.calendar-color-picker::-webkit-color-swatch {
+    border: none;
+    border-radius: calc(var(--radius-md) - 2px);
+}
+
+.calendar-color-picker::-moz-color-swatch {
+    border: none;
+    border-radius: calc(var(--radius-md) - 2px);
+}
+
 .calendar-color-indicator {
     width: 16px;
     height: 16px;
@@ -117,6 +147,11 @@
     font-size: var(--font-size-base);
 }
 
+.calendar-source {
+    font-size: var(--font-size-xs);
+    color: var(--color-text-tertiary);
+}
+
 .calendar-event-count {
     font-size: var(--font-size-sm);
     color: var(--color-text-secondary);
@@ -127,6 +162,8 @@
     gap: var(--space-xs);
 }
 
+.calendar-toggle,
+.calendar-remove,
 .calendar-toggle-btn,
 .calendar-remove-btn,
 .calendar-rename-btn {
@@ -140,18 +177,22 @@
     transition: background-color var(--transition-fast), color var(--transition-fast);
 }
 
-.calendar-rename-btn:hover {
-    background-color: var(--color-bg-primary);
-    color: var(--color-primary);
-}
-
+.calendar-toggle:hover,
 .calendar-toggle-btn:hover {
     background-color: var(--color-bg-primary);
     color: var(--color-primary);
 }
 
+.calendar-remove:hover,
 .calendar-remove-btn:hover {
     background-color: var(--color-error);
+    color: white;
+}
+
+.calendar-rename-btn:hover {
+    background-color: var(--color-bg-primary);
+    color: var(--color-primary);
+}
     color: white;
 }
 

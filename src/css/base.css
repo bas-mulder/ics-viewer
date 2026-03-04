@@ -196,3 +196,43 @@ svg {
     display: block;
     vertical-align: middle;
 }
+
+/* ========================================
+   Custom Scrollbar Styling
+   ======================================== */
+
+/* Webkit browsers (Chrome, Safari, Edge) */
+::-webkit-scrollbar {
+    width: 12px;
+    height: 12px;
+}
+
+::-webkit-scrollbar-track {
+    background: var(--color-bg-secondary);
+    border-radius: var(--radius-lg);
+}
+
+::-webkit-scrollbar-thumb {
+    background: var(--color-secondary-light);
+    border-radius: var(--radius-lg);
+    border: 3px solid var(--color-bg-secondary);
+    transition: background-color var(--transition-fast);
+}
+
+::-webkit-scrollbar-thumb:hover {
+    background: var(--color-secondary);
+}
+
+::-webkit-scrollbar-thumb:active {
+    background: var(--color-secondary-dark);
+}
+
+::-webkit-scrollbar-corner {
+    background: var(--color-bg-secondary);
+}
+
+/* Firefox */
+* {
+    scrollbar-width: thin;
+    scrollbar-color: var(--color-secondary-light) var(--color-bg-secondary);
+}

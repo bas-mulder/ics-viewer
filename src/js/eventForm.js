@@ -23,6 +23,7 @@ export class EventForm {
         
         // Form inputs
         this.summaryInput = document.getElementById('eventSummary');
+        this.calendarSelect = document.getElementById('eventCalendar');
         this.startDateInput = document.getElementById('eventStartDate');
         this.startTimeInput = document.getElementById('eventStartTime');
         this.endDateInput = document.getElementById('eventEndDate');
@@ -97,15 +98,42 @@ export class EventForm {
     }
 
     /**
+     * Populate calendar selector dropdown
+     */
+    populateCalendarSelect(calendars) {
+        if (!this.calendarSelect) return;
+        
+        // Clear existing options except the first one
+        this.calendarSelect.innerHTML = '<option value="">Select a calendar</option>';
+        
+        // Add calendar options
+        calendars.forEach(calendar => {
+            const option = document.createElement('option');
+            option.value = calendar.id;
+            option.textContent = calendar.name;
+            option.style.color = calendar.color;
+            this.calendarSelect.appendChild(option);
+        });
+        
+        // Select first calendar by default if available
+        if (calendars.length > 0) {
+            this.calendarSelect.value = calendars[0].id;
+        }
+    }
+
+    /**
      * Open form for creating a new event
      */
-    openForNew(prefilledData = {}) {
+    openForNew(prefilledData = {}, calendars = []) {
         this.editMode = false;
         this.currentEvent = null;
         this.modalTitle.textContent = 'Add New Event';
         this.saveButton.textContent = 'Add Event';
         
         this.resetForm();
+        
+        // Populate calendar selector
+        this.populateCalendarSelect(calendars);
         
         // Pre-fill with provided data (e.g., clicked date/time)
         if (prefilledData.date) {
@@ -207,6 +235,12 @@ export class EventForm {
             return;
         }
         
+        if (!this.calendarSelect.value) {
+            alert('Please select a calendar.');
+            this.calendarSelect.focus();
+            return;
+        }
+        
         if (!this.startDateInput.value) {
             alert('Please enter a start date.');
             this.startDateInput.focus();
@@ -270,7 +304,8 @@ export class EventForm {
             end: end,
             allDay: isAllDay,
             categories: categories,
-            status: 'CONFIRMED'
+            status: 'CONFIRMED',
+            calendarId: this.calendarSelect.value
         };
     }
 }

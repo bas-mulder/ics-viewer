@@ -232,7 +232,7 @@
 
 /* Scrollbar Styling for Modal */
 .modal-content::-webkit-scrollbar {
-    width: 8px;
+    width: 10px;
 }
 
 .modal-content::-webkit-scrollbar-track {
@@ -243,6 +243,7 @@
 .modal-content::-webkit-scrollbar-thumb {
     background: var(--color-secondary-light);
     border-radius: var(--radius-lg);
+    border: 2px solid var(--color-bg-secondary);
 }
 
 .modal-content::-webkit-scrollbar-thumb:hover {
@@ -317,19 +318,71 @@ textarea.form-input {
     gap: var(--space-md);
 }
 
+/* Custom Checkbox Styling */
 .checkbox-label {
     display: flex;
     align-items: center;
-    gap: var(--space-sm);
+    gap: var(--space-md);
     cursor: pointer;
     user-select: none;
+    padding: var(--space-md);
+    border-radius: var(--radius-md);
+    background-color: var(--color-bg-secondary);
+    border: 1px solid var(--color-border);
+    transition: background-color var(--transition-fast), border-color var(--transition-fast);
+}
+
+.checkbox-label:hover {
+    background-color: var(--color-bg-tertiary);
+    border-color: var(--color-primary-light);
 }
 
 .checkbox-label input[type="checkbox"] {
-    width: 18px;
-    height: 18px;
+    position: relative;
+    appearance: none;
+    -webkit-appearance: none;
+    width: 44px;
+    height: 24px;
+    background-color: var(--color-bg-tertiary);
+    border: 2px solid var(--color-border);
+    border-radius: var(--radius-full);
     cursor: pointer;
-    accent-color: var(--color-primary);
+    transition: background-color var(--transition-fast), border-color var(--transition-fast);
+    flex-shrink: 0;
+}
+
+.checkbox-label input[type="checkbox"]::before {
+    content: '';
+    position: absolute;
+    width: 16px;
+    height: 16px;
+    border-radius: 50%;
+    top: 2px;
+    left: 2px;
+    background-color: var(--color-bg-primary);
+    box-shadow: var(--shadow-sm);
+    transition: transform var(--transition-fast), background-color var(--transition-fast);
+}
+
+.checkbox-label input[type="checkbox"]:checked {
+    background-color: var(--color-primary);
+    border-color: var(--color-primary);
+}
+
+.checkbox-label input[type="checkbox"]:checked::before {
+    transform: translateX(20px);
+    background-color: var(--color-bg-primary);
+}
+
+.checkbox-label input[type="checkbox"]:focus {
+    outline: none;
+    box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+}
+
+.checkbox-label span {
+    font-size: var(--font-size-base);
+    font-weight: var(--font-weight-medium);
+    color: var(--color-text-primary);
 }
 
 .form-actions {
