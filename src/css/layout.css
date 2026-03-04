@@ -98,6 +98,12 @@
     min-height: 60vh;
 }
 
+.upload-section .container {
+    display: flex;
+    justify-content: center;
+    width: 100%;
+}
+
 .upload-card {
     background-color: var(--color-bg-primary);
     border-radius: var(--radius-xl);
@@ -105,6 +111,7 @@
     padding: var(--space-2xl);
     max-width: 600px;
     width: 100%;
+    margin: 0 auto;
 }
 
 .upload-card h2 {
