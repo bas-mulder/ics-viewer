@@ -13,7 +13,9 @@ class ICSViewerApp {
         this.calendar = null;
         this.events = [];
         this.weekStartsOn = this.loadWeekStartPreference();
+        this.currentTheme = this.loadThemePreference();
         
+        this.initializeTheme();
         this.initializeElements();
         this.setupEventListeners();
         this.initializeModals();
@@ -48,6 +50,9 @@ class ICSViewerApp {
         this.settingsModal = document.getElementById('settingsModal');
         this.settingsCloseBtn = document.getElementById('settingsCloseBtn');
         this.weekStartSelect = document.getElementById('weekStartSelect');
+        
+        // Theme toggle
+        this.themeToggleBtn = document.getElementById('themeToggleBtn');
         
         // UI feedback
         this.loadingOverlay = document.getElementById('loadingOverlay');
@@ -98,6 +103,9 @@ class ICSViewerApp {
         });
         this.weekStartSelect.addEventListener('change', (e) => this.handleWeekStartChange(e));
         
+        // Theme toggle
+        this.themeToggleBtn.addEventListener('click', () => this.toggleTheme());
+        
         // Initialize week start select
         this.updateWeekStartSelect();
     }
@@ -108,6 +116,29 @@ class ICSViewerApp {
     initializeModals() {
         const eventModalEl = document.getElementById('eventModal');
         this.eventModal = new EventModal(eventModalEl);
+    }
+
+    /**
+     * Initialize theme on app start
+     */
+    initializeTheme() {
+        document.documentElement.setAttribute('data-theme', this.currentTheme);
+    }
+
+    /**
+     * Load theme preference
+     */
+    loadThemePreference() {
+        return loadFromStorage('theme', 'light');
+    }
+
+    /**
+     * Toggle theme between light and dark
+     */
+    toggleTheme() {
+        this.currentTheme = this.currentTheme === 'light' ? 'dark' : 'light';
+        document.documentElement.setAttribute('data-theme', this.currentTheme);
+        saveToStorage('theme', this.currentTheme);
     }
 
     /**

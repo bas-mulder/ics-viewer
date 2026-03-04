@@ -18,12 +18,14 @@ A modern, lightweight web application for viewing ICS (iCalendar) files. Built w
   - Displays: title, date/time, duration, location, description, organizer, attendees, and more
 
 - **Customization**
+  - Dark/Light mode toggle with smooth transitions
   - Auto-detect week start day based on user locale
   - Manual override to start weeks on Sunday or Monday
   - Settings persist across sessions via localStorage
 
 - **Modern Design**
   - Clean, sleek interface with custom CSS
+  - Dark mode support for comfortable viewing
   - Fully responsive (mobile, tablet, desktop)
   - Smooth animations and transitions
   - Accessibility-friendly with keyboard navigation
@@ -103,6 +105,7 @@ Note: Some URLs may have CORS restrictions. If loading fails, download the file 
 
 ### Navigating the Calendar
 
+- **Theme Toggle**: Click the sun/moon icon to switch between light and dark mode
 - **Previous/Next**: Navigate to the previous or next time period
 - **Today**: Jump back to today's date
 - **View Switcher**: Toggle between Month, Week, and Day views
@@ -123,6 +126,10 @@ Note: Some URLs may have CORS restrictions. If loading fails, download the file 
 
 Click the settings icon (⚙️) to customize:
 - **Week Start Day**: Choose Sunday, Monday, or auto-detect from your locale
+
+### Theme Preference
+
+Your theme preference (light/dark) is automatically saved and will be restored when you return to the app.
 
 ## Browser Support
 

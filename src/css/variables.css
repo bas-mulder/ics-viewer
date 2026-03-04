@@ -3,7 +3,7 @@
    ======================================== */
 
 :root {
-    /* Color Palette */
+    /* Color Palette - Light Mode (Default) */
     --color-primary: #2563eb;
     --color-primary-dark: #1d4ed8;
     --color-primary-light: #3b82f6;
@@ -112,3 +112,67 @@
         --calendar-cell-min-height: 60px;
     }
 }
+
+/* ========================================
+   Dark Mode
+   ======================================== */
+
+[data-theme="dark"] {
+    /* Color Palette - Dark Mode */
+    --color-primary: #3b82f6;
+    --color-primary-dark: #2563eb;
+    --color-primary-light: #60a5fa;
+    
+    --color-secondary: #94a3b8;
+    --color-secondary-dark: #cbd5e1;
+    --color-secondary-light: #64748b;
+    
+    --color-accent: #2dd4bf;
+    --color-accent-dark: #5eead4;
+    --color-accent-light: #14b8a6;
+    
+    --color-success: #34d399;
+    --color-warning: #fbbf24;
+    --color-error: #f87171;
+    
+    --color-bg-primary: #0f172a;
+    --color-bg-secondary: #1e293b;
+    --color-bg-tertiary: #334155;
+    
+    --color-text-primary: #f1f5f9;
+    --color-text-secondary: #cbd5e1;
+    --color-text-tertiary: #94a3b8;
+    --color-text-inverse: #0f172a;
+    
+    --color-border: #334155;
+    --color-border-light: #475569;
+    
+    /* Adjusted shadows for dark mode */
+    --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.3);
+    --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.4), 0 2px 4px -1px rgba(0, 0, 0, 0.3);
+    --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.4), 0 4px 6px -2px rgba(0, 0, 0, 0.3);
+    --shadow-xl: 0 20px 25px -5px rgba(0, 0, 0, 0.5), 0 10px 10px -5px rgba(0, 0, 0, 0.3);
+}
+
+/* Smooth transition for theme changes */
+body {
+    transition: background-color var(--transition-base), color var(--transition-base);
+}
+
+* {
+    transition: background-color var(--transition-base), 
+                border-color var(--transition-base),
+                color var(--transition-fast);
+}
+
+/* Preserve specific transitions that shouldn't use theme transition */
+button,
+a,
+.event-item,
+.week-event-item,
+.modal-overlay,
+.modal-content,
+.loading-spinner {
+    transition: all var(--transition-fast);
+}
+
