@@ -644,6 +644,12 @@ class ICSViewerApp {
         }
         
         try {
+            // Load existing calendars from storage first to avoid overwriting
+            // Only load if calendars array is empty (hasn't been loaded yet)
+            if (this.calendars.length === 0) {
+                this.loadCalendarsFromStorage();
+            }
+            
             // Convert events to ICS
             const icsData = eventsToICS(this.generatedEvents, this.generatedConfig.name);
             
