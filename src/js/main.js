@@ -12,6 +12,7 @@ class ICSViewerApp {
     constructor() {
         this.calendar = null;
         this.events = [];
+        this.currentCalendarURL = null; // Track currently loaded calendar URL
         this.weekStartsOn = this.loadWeekStartPreference();
         this.currentTheme = this.loadThemePreference();
         
@@ -19,6 +20,7 @@ class ICSViewerApp {
         this.initializeElements();
         this.setupEventListeners();
         this.initializeModals();
+        this.loadFromURLParameter(); // Check if URL has a calendar parameter
     }
 
     /**
@@ -113,6 +115,9 @@ class ICSViewerApp {
         
         // Theme toggle
         this.themeToggleBtn.addEventListener('click', () => this.toggleTheme());
+        
+        // Handle browser back/forward navigation
+        window.addEventListener('popstate', (e) => this.handlePopState(e));
         
         // Initialize week start select
         this.updateWeekStartSelect();
@@ -298,11 +303,54 @@ class ICSViewerApp {
             }
             
             this.events = events;
+            this.currentCalendarURL = url; // Store the URL
+            this.updateURLParameter(url); // Update browser URL
             this.showCalendar();
             this.hideLoading();
         } catch (error) {
             this.hideLoading();
             this.showError(error.message);
+        }
+    }
+
+    /**
+     * Update URL parameter with calendar URL
+     */
+    updateURLParameter(calendarURL) {
+        if (!calendarURL) return;
+        
+        const url = new URL(window.location);
+        url.searchParams.set('calendar', calendarURL);
+        window.history.pushState({ calendarURL }, '', url);
+    }
+
+    /**
+     * Load calendar from URL parameter on initial load
+     */
+    async loadFromURLParameter() {
+        const urlParams = new URLSearchParams(window.location.search);
+        const calendarURL = urlParams.get('calendar');
+        
+        if (calendarURL) {
+            // Pre-fill the URL input
+            this.urlInput.value = calendarURL;
+            // Load the calendar
+            await this.loadURL(calendarURL);
+        }
+    }
+
+    /**
+     * Handle browser back/forward navigation
+     */
+    async handlePopState(e) {
+        if (e.state && e.state.calendarURL) {
+            // User navigated back to a calendar URL
+            this.urlInput.value = e.state.calendarURL;
+            await this.loadURL(e.state.calendarURL);
+        } else {
+            // User navigated back to initial state (no calendar)
+            this.showUploadSection();
+            this.currentCalendarURL = null;
         }
     }
 
@@ -337,6 +385,12 @@ class ICSViewerApp {
         // Reset inputs
         this.fileInput.value = '';
         this.urlInput.value = '';
+        
+        // Clear URL parameter
+        this.currentCalendarURL = null;
+        const url = new URL(window.location);
+        url.searchParams.delete('calendar');
+        window.history.pushState({}, '', url);
     }
 
     /**

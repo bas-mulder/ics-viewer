@@ -23,6 +23,12 @@ A modern, lightweight web application for viewing ICS (iCalendar) files. Built w
   - Manual override to start weeks on Sunday or Monday
   - Settings persist across sessions via localStorage
 
+- **URL State Management**
+  - Calendar URLs are added to the browser address bar
+  - Share calendar views with others via URL
+  - Browser back/forward navigation support
+  - Bookmark specific calendars
+
 - **Modern Design**
   - Clean, sleek interface with custom CSS
   - Dark mode support for comfortable viewing
@@ -105,6 +111,8 @@ To run the application locally:
 **Option 2: Load from URL**
 1. Paste the URL of an ICS calendar
 2. Click "Load"
+3. The calendar URL will be added to your browser's address bar
+4. You can share this URL with others or bookmark it for quick access
 
 **Note on CORS**: Some URLs may have CORS (Cross-Origin Resource Sharing) restrictions. The app will automatically attempt to use a CORS proxy if the direct request fails. If both methods fail, you can download the file and upload it manually.
 
@@ -135,6 +143,16 @@ Click the settings icon (⚙️) to customize:
 ### Theme Preference
 
 Your theme preference (light/dark) is automatically saved and will be restored when you return to the app.
+
+### Sharing Calendars
+
+When you load a calendar from a URL, the calendar URL is automatically added to your browser's address bar. This means you can:
+- **Share the URL** with others so they can view the same calendar
+- **Bookmark the URL** for quick access to your favorite calendars
+- **Use browser back/forward** buttons to navigate between different calendars
+- **Reload the page** and the calendar will automatically load
+
+Example: `https://yourdomain.com/ics-viewer/?calendar=https://example.com/events.ics`
 
 ## Browser Support
 
