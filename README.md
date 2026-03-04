@@ -1,4 +1,4 @@
-# ICS Calendar Viewer
+# TimeView
 
 A modern, lightweight web application for viewing ICS (iCalendar) files. Built with vanilla JavaScript, featuring a sleek interface and multiple calendar views.
 

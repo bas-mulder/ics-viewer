@@ -20,6 +20,7 @@ class ICSViewerApp {
         this.initializeElements();
         this.setupEventListeners();
         this.initializeModals();
+        this.loadCalendarListState(); // Load calendar list collapsed state
         this.loadCalendarsFromStorage(); // Load saved calendars
         this.loadFromURLParameter(); // Check if URL has a calendar parameter
     }
@@ -86,6 +87,8 @@ class ICSViewerApp {
         this.calendarGrid = document.getElementById('calendarGrid');
         this.calendarTitle = document.getElementById('calendarTitle');
         this.calendarList = document.getElementById('calendarList');
+        this.calendarListContainer = document.querySelector('.calendar-list-container');
+        this.calendarListToggle = document.getElementById('calendarListToggle');
         this.prevBtn = document.getElementById('prevBtn');
         this.nextBtn = document.getElementById('nextBtn');
         this.todayBtn = document.getElementById('todayBtn');
@@ -144,6 +147,9 @@ class ICSViewerApp {
         this.todayBtn.addEventListener('click', () => this.navigateToday());
         this.loadNewBtn.addEventListener('click', () => this.showUploadSection());
         this.addCalendarBtn.addEventListener('click', () => this.showUploadSection());
+        
+        // Calendar list toggle
+        this.calendarListToggle.addEventListener('click', () => this.toggleCalendarList());
         
         // View switcher
         this.viewBtns.forEach(btn => {
@@ -455,6 +461,44 @@ class ICSViewerApp {
     }
 
     /**
+     * Start renaming a calendar
+     */
+    startRenameCalendar(calendarId, nameElement) {
+        const calendar = this.calendars.find(c => c.id === calendarId);
+        if (!calendar) return;
+        
+        const currentName = calendar.name;
+        const input = document.createElement('input');
+        input.type = 'text';
+        input.className = 'calendar-name-input';
+        input.value = currentName;
+        
+        // Replace the span with an input
+        nameElement.replaceWith(input);
+        input.focus();
+        input.select();
+        
+        // Save on blur or Enter key
+        const save = () => {
+            const newName = input.value.trim();
+            if (newName && newName !== currentName) {
+                calendar.name = newName;
+                this.saveCalendarsToStorage();
+            }
+            this.updateCalendarList();
+        };
+        
+        input.addEventListener('blur', save);
+        input.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter') {
+                save();
+            } else if (e.key === 'Escape') {
+                this.updateCalendarList(); // Cancel and restore original
+            }
+        });
+    }
+
+    /**
      * Save calendars to localStorage
      */
     saveCalendarsToStorage() {
@@ -532,10 +576,16 @@ class ICSViewerApp {
             item.innerHTML = `
                 <div class="calendar-color-indicator" style="background-color: ${cal.color}"></div>
                 <div class="calendar-info">
-                    <span class="calendar-name">${this.escapeHtml(cal.name)}</span>
+                    <span class="calendar-name" data-id="${cal.id}">${this.escapeHtml(cal.name)}</span>
                     <span class="calendar-event-count">${cal.events.length} events</span>
                 </div>
                 <div class="calendar-actions">
+                    <button class="calendar-rename-btn" data-id="${cal.id}" aria-label="Rename calendar">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
+                            <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
+                        </svg>
+                    </button>
                     <button class="calendar-toggle-btn" data-id="${cal.id}" aria-label="${cal.visible ? 'Hide' : 'Show'} calendar">
                         ${cal.visible ? 
                             '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle></svg>' :
@@ -550,6 +600,14 @@ class ICSViewerApp {
                     </button>
                 </div>
             `;
+            
+            // Rename calendar
+            const nameElement = item.querySelector('.calendar-name');
+            const renameBtn = item.querySelector('.calendar-rename-btn');
+            
+            renameBtn.addEventListener('click', () => {
+                this.startRenameCalendar(cal.id, nameElement);
+            });
             
             // Toggle visibility
             item.querySelector('.calendar-toggle-btn').addEventListener('click', () => {
@@ -638,10 +696,34 @@ class ICSViewerApp {
         
         // Initialize or update calendar
         if (!this.calendar) {
+            // Load saved navigation state
+            const savedView = loadFromStorage('calendarView', 'month');
+            const savedDate = loadFromStorage('calendarDate');
+            
             this.calendar = new Calendar(this.calendarGrid, allEvents, {
-                view: 'month',
+                view: savedView,
                 weekStartsOn: this.weekStartsOn,
                 onEventClick: (event) => this.eventModal.show(event)
+            });
+            
+            // Restore saved date if available
+            if (savedDate) {
+                try {
+                    this.calendar.currentDate = new Date(savedDate);
+                    this.calendar.render();
+                } catch (e) {
+                    // If date parsing fails, use current date
+                    console.warn('Failed to restore saved date:', e);
+                }
+            }
+            
+            // Update view buttons to reflect saved state
+            this.viewBtns.forEach(btn => {
+                if (btn.dataset.view === savedView) {
+                    btn.classList.add('active');
+                } else {
+                    btn.classList.remove('active');
+                }
             });
         } else {
             this.calendar.setEvents(allEvents);
@@ -676,6 +758,7 @@ class ICSViewerApp {
         if (this.calendar) {
             this.calendar.previous();
             this.updateCalendarTitle();
+            this.saveNavigationState();
         }
     }
 
@@ -686,6 +769,7 @@ class ICSViewerApp {
         if (this.calendar) {
             this.calendar.next();
             this.updateCalendarTitle();
+            this.saveNavigationState();
         }
     }
 
@@ -696,6 +780,7 @@ class ICSViewerApp {
         if (this.calendar) {
             this.calendar.today();
             this.updateCalendarTitle();
+            this.saveNavigationState();
         }
     }
 
@@ -706,6 +791,7 @@ class ICSViewerApp {
         if (this.calendar) {
             this.calendar.setView(view);
             this.updateCalendarTitle();
+            this.saveNavigationState();
             
             // Update active button
             this.viewBtns.forEach(btn => {
@@ -719,11 +805,39 @@ class ICSViewerApp {
     }
 
     /**
+     * Save current navigation state to localStorage
+     */
+    saveNavigationState() {
+        if (this.calendar) {
+            saveToStorage('calendarDate', this.calendar.currentDate.toISOString());
+            saveToStorage('calendarView', this.calendar.view);
+        }
+    }
+
+    /**
      * Update calendar title
      */
     updateCalendarTitle() {
         if (this.calendar) {
             this.calendarTitle.textContent = this.calendar.getTitle();
+        }
+    }
+
+    /**
+     * Toggle calendar list collapse/expand
+     */
+    toggleCalendarList() {
+        const isCollapsed = this.calendarListContainer.classList.toggle('collapsed');
+        saveToStorage('calendarListCollapsed', isCollapsed);
+    }
+
+    /**
+     * Load calendar list collapsed state
+     */
+    loadCalendarListState() {
+        const isCollapsed = loadFromStorage('calendarListCollapsed', false);
+        if (isCollapsed) {
+            this.calendarListContainer.classList.add('collapsed');
         }
     }
 

@@ -27,17 +27,60 @@
     box-shadow: var(--shadow-md);
 }
 
+.calendar-list-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: var(--space-md);
+}
+
 .calendar-list-container h3 {
     font-size: var(--font-size-lg);
     font-weight: var(--font-weight-semibold);
     color: var(--color-text-primary);
-    margin: 0 0 var(--space-md) 0;
+    margin: 0;
+}
+
+.calendar-list-toggle {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 32px;
+    height: 32px;
+    border-radius: var(--radius-sm);
+    color: var(--color-text-secondary);
+    background: none;
+    border: none;
+    cursor: pointer;
+    transition: background-color var(--transition-fast), color var(--transition-fast), transform var(--transition-fast);
+}
+
+.calendar-list-toggle:hover {
+    background-color: var(--color-bg-tertiary);
+    color: var(--color-text-primary);
+}
+
+.calendar-list-toggle svg {
+    transition: transform var(--transition-normal);
+}
+
+.calendar-list-container.collapsed .calendar-list-toggle svg {
+    transform: rotate(-90deg);
 }
 
 .calendar-list {
     display: flex;
     flex-direction: column;
     gap: var(--space-sm);
+    overflow: hidden;
+    transition: max-height var(--transition-normal), opacity var(--transition-normal);
+    max-height: 1000px;
+    opacity: 1;
+}
+
+.calendar-list-container.collapsed .calendar-list {
+    max-height: 0;
+    opacity: 0;
 }
 
 .calendar-list-item {
@@ -85,7 +128,8 @@
 }
 
 .calendar-toggle-btn,
-.calendar-remove-btn {
+.calendar-remove-btn,
+.calendar-rename-btn {
     display: flex;
     align-items: center;
     justify-content: center;
@@ -96,6 +140,11 @@
     transition: background-color var(--transition-fast), color var(--transition-fast);
 }
 
+.calendar-rename-btn:hover {
+    background-color: var(--color-bg-primary);
+    color: var(--color-primary);
+}
+
 .calendar-toggle-btn:hover {
     background-color: var(--color-bg-primary);
     color: var(--color-primary);
@@ -104,6 +153,31 @@
 .calendar-remove-btn:hover {
     background-color: var(--color-error);
     color: white;
+}
+
+/* Calendar name editing state */
+.calendar-name {
+    font-weight: var(--font-weight-medium);
+    color: var(--color-text-primary);
+    font-size: var(--font-size-base);
+    cursor: default;
+}
+
+.calendar-name.editing {
+    cursor: text;
+}
+
+.calendar-name-input {
+    font-weight: var(--font-weight-medium);
+    color: var(--color-text-primary);
+    font-size: var(--font-size-base);
+    background-color: var(--color-bg-primary);
+    border: 1px solid var(--color-primary);
+    border-radius: var(--radius-sm);
+    padding: 2px var(--space-xs);
+    outline: none;
+    width: 100%;
+    font-family: inherit;
 }
 
 /* Calendar Controls */
@@ -530,8 +604,13 @@
 
     .calendar-nav .btn {
         padding: var(--space-xs);
-        width: 36px;
+        min-width: 36px;
         height: 36px;
+    }
+    
+    /* Icon-only buttons (prev/next) stay square */
+    .calendar-nav .btn[aria-label] {
+        width: 36px;
     }
 
     .calendar-nav .btn svg {
@@ -559,19 +638,39 @@
         font-size: 0.625rem;
     }
 
-    /* Stack week view days vertically on very small screens */
+    /* Convert week view to horizontal scroll on very small screens */
     .calendar-grid.week-view {
-        display: block;
+        display: grid;
+        grid-template-columns: var(--calendar-time-width) repeat(7, minmax(120px, 1fr));
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
     }
-
-    .week-header-cell,
-    .week-day-column {
-        width: 100%;
+    
+    .week-day-header {
+        position: sticky;
+        top: 0;
+        z-index: 3;
+        min-width: 120px;
     }
-
-    .week-day-column {
-        margin-bottom: var(--space-md);
-        border-bottom: 1px solid var(--color-border);
+    
+    .week-hour-cell {
+        min-width: 120px;
+        min-height: 50px;
+    }
+    
+    .time-slot {
+        position: sticky;
+        left: 0;
+        z-index: 3;
+        background-color: var(--color-bg-tertiary);
+    }
+    
+    /* Corner cell (first time-slot) needs to stick to both top and left */
+    .calendar-grid.week-view .time-slot:first-child {
+        position: sticky;
+        top: 0;
+        left: 0;
+        z-index: 4;
     }
 
     /* Improve day view on mobile */
