@@ -1,0 +1,170 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="A modern ICS calendar viewer that allows you to visualize calendar events from ICS files or URLs">
+    <title>ICS Calendar Viewer</title>
+    <link rel="stylesheet" href="css/main.css">
+</head>
+<body>
+    <!-- Header -->
+    <header class="app-header">
+        <div class="container">
+            <h1 class="app-title">ICS Calendar Viewer</h1>
+            <button class="settings-btn" id="settingsBtn" aria-label="Settings">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <circle cx="12" cy="12" r="3"></circle>
+                    <path d="M12 1v6m0 6v6m0-18a2 2 0 0 1 2 2m-2-2a2 2 0 0 0-2 2m2 18a2 2 0 0 1-2-2m2 2a2 2 0 0 0 2-2M6 6l4.24 4.24m7.52 0L22 6M6 18l4.24-4.24m7.52 0L22 18"></path>
+                </svg>
+            </button>
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <main class="app-main">
+        <!-- Upload Section (shown initially) -->
+        <section class="upload-section" id="uploadSection">
+            <div class="container">
+                <div class="upload-card">
+                    <h2>Load Your Calendar</h2>
+                    <p class="upload-description">Upload an ICS file or provide a URL to view your calendar events</p>
+                    
+                    <!-- File Upload -->
+                    <div class="upload-option">
+                        <h3>Upload File</h3>
+                        <div class="file-drop-zone" id="fileDropZone">
+                            <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                                <polyline points="17 8 12 3 7 8"></polyline>
+                                <line x1="12" y1="3" x2="12" y2="15"></line>
+                            </svg>
+                            <p>Drag & drop your ICS file here</p>
+                            <p class="upload-hint">or</p>
+                            <button class="btn btn-primary" id="fileSelectBtn">Choose File</button>
+                            <input type="file" id="fileInput" accept=".ics,.ical" hidden>
+                        </div>
+                    </div>
+
+                    <!-- URL Input -->
+                    <div class="upload-option">
+                        <h3>Load from URL</h3>
+                        <div class="url-input-group">
+                            <input 
+                                type="url" 
+                                id="urlInput" 
+                                class="url-input" 
+                                placeholder="https://example.com/calendar.ics"
+                                aria-label="Calendar URL"
+                            >
+                            <button class="btn btn-primary" id="urlLoadBtn">Load</button>
+                        </div>
+                        <p class="help-text">Note: Some URLs may have CORS restrictions. If loading fails, try uploading the file instead.</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Calendar Section (hidden initially) -->
+        <section class="calendar-section hidden" id="calendarSection">
+            <div class="container">
+                <!-- Calendar Controls -->
+                <div class="calendar-controls">
+                    <div class="calendar-nav">
+                        <button class="btn btn-secondary" id="prevBtn" aria-label="Previous">
+                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <polyline points="15 18 9 12 15 6"></polyline>
+                            </svg>
+                        </button>
+                        <button class="btn btn-secondary" id="todayBtn">Today</button>
+                        <button class="btn btn-secondary" id="nextBtn" aria-label="Next">
+                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <polyline points="9 18 15 12 9 6"></polyline>
+                            </svg>
+                        </button>
+                    </div>
+                    
+                    <h2 class="calendar-title" id="calendarTitle">January 2024</h2>
+                    
+                    <div class="calendar-view-switcher">
+                        <button class="view-btn active" data-view="month" aria-label="Month view">Month</button>
+                        <button class="view-btn" data-view="week" aria-label="Week view">Week</button>
+                        <button class="view-btn" data-view="day" aria-label="Day view">Day</button>
+                    </div>
+                </div>
+
+                <!-- Calendar Grid -->
+                <div class="calendar-wrapper">
+                    <div class="calendar-grid" id="calendarGrid">
+                        <!-- Calendar will be dynamically rendered here -->
+                    </div>
+                </div>
+
+                <!-- Actions -->
+                <div class="calendar-actions">
+                    <button class="btn btn-secondary" id="loadNewBtn">Load Different Calendar</button>
+                </div>
+            </div>
+        </section>
+
+        <!-- Loading Indicator -->
+        <div class="loading-overlay hidden" id="loadingOverlay">
+            <div class="loading-spinner"></div>
+            <p>Loading calendar...</p>
+        </div>
+
+        <!-- Error Message -->
+        <div class="error-toast hidden" id="errorToast">
+            <div class="error-content">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <circle cx="12" cy="12" r="10"></circle>
+                    <line x1="15" y1="9" x2="9" y2="15"></line>
+                    <line x1="9" y1="9" x2="15" y2="15"></line>
+                </svg>
+                <span id="errorMessage"></span>
+            </div>
+        </div>
+    </main>
+
+    <!-- Event Modal -->
+    <div class="modal-overlay hidden" id="eventModal">
+        <div class="modal-content" role="dialog" aria-labelledby="eventTitle">
+            <button class="modal-close" id="modalCloseBtn" aria-label="Close">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <line x1="18" y1="6" x2="6" y2="18"></line>
+                    <line x1="6" y1="6" x2="18" y2="18"></line>
+                </svg>
+            </button>
+            <div class="modal-body" id="modalBody">
+                <!-- Event details will be rendered here -->
+            </div>
+        </div>
+    </div>
+
+    <!-- Settings Modal -->
+    <div class="modal-overlay hidden" id="settingsModal">
+        <div class="modal-content" role="dialog" aria-labelledby="settingsTitle">
+            <button class="modal-close" id="settingsCloseBtn" aria-label="Close">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <line x1="18" y1="6" x2="6" y2="18"></line>
+                    <line x1="6" y1="6" x2="18" y2="18"></line>
+                </svg>
+            </button>
+            <div class="modal-body">
+                <h2 id="settingsTitle">Settings</h2>
+                <div class="settings-group">
+                    <label for="weekStartSelect">Week starts on:</label>
+                    <select id="weekStartSelect" class="settings-select">
+                        <option value="auto">Auto (based on locale)</option>
+                        <option value="0">Sunday</option>
+                        <option value="1">Monday</option>
+                    </select>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Scripts -->
+    <script type="module" src="js/main.js"></script>
+</body>
+</html>

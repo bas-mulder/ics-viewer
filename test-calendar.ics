@@ -1,0 +1,60 @@
+BEGIN:VCALENDAR
+VERSION:2.0
+PRODID:-//ICS Viewer Test//EN
+CALSCALE:GREGORIAN
+METHOD:PUBLISH
+X-WR-CALNAME:Test Calendar
+X-WR-TIMEZONE:UTC
+BEGIN:VEVENT
+UID:test-event-1@ics-viewer
+DTSTART:20260304T100000Z
+DTEND:20260304T110000Z
+SUMMARY:Team Meeting
+DESCRIPTION:Weekly team sync-up meeting to discuss project progress and upcoming tasks.
+LOCATION:Conference Room A
+ORGANIZER;CN=John Doe:mailto:john@example.com
+STATUS:CONFIRMED
+END:VEVENT
+BEGIN:VEVENT
+UID:test-event-2@ics-viewer
+DTSTART;VALUE=DATE:20260305
+DTEND;VALUE=DATE:20260306
+SUMMARY:Company Holiday
+DESCRIPTION:All offices closed for company holiday.
+STATUS:CONFIRMED
+END:VEVENT
+BEGIN:VEVENT
+UID:test-event-3@ics-viewer
+DTSTART:20260306T140000Z
+DTEND:20260306T153000Z
+SUMMARY:Client Presentation
+DESCRIPTION:Presentation of Q1 results to key stakeholders. Please arrive 15 minutes early to set up.
+LOCATION:Main Office - Board Room
+ORGANIZER;CN=Jane Smith:mailto:jane@example.com
+ATTENDEE;CN=Alice Johnson;ROLE=REQ-PARTICIPANT:mailto:alice@example.com
+ATTENDEE;CN=Bob Wilson;ROLE=REQ-PARTICIPANT:mailto:bob@example.com
+STATUS:CONFIRMED
+CATEGORIES:Business,Important
+END:VEVENT
+BEGIN:VEVENT
+UID:test-event-4@ics-viewer
+DTSTART:20260310T093000Z
+DTEND:20260310T103000Z
+SUMMARY:Coffee Chat
+DESCRIPTION:Informal coffee meeting with new team member.
+LOCATION:Café Downtown
+STATUS:TENTATIVE
+END:VEVENT
+BEGIN:VEVENT
+UID:test-event-5@ics-viewer
+DTSTART:20260315T080000Z
+DTEND:20260315T170000Z
+SUMMARY:Workshop: Modern Web Development
+DESCRIPTION:Full-day workshop covering the latest trends in web development\, including:\n- Progressive Web Apps\n- Modern JavaScript frameworks\n- Performance optimization\n- Accessibility best practices\n\nLunch will be provided.
+LOCATION:Training Center - Room 301
+ORGANIZER;CN=Tech Training:mailto:training@example.com
+STATUS:CONFIRMED
+CATEGORIES:Training,Development
+URL:https://example.com/workshops/web-dev
+END:VEVENT
+END:VCALENDAR
