@@ -169,13 +169,17 @@ export class EventForm {
     /**
      * Open form for editing an existing event
      */
-    openForEdit(event) {
+    openForEdit(event, calendars = [], calendarId = null) {
         this.editMode = true;
         this.currentEvent = event;
         this.modalTitle.textContent = 'Edit Event';
         this.saveButton.textContent = 'Save Changes';
         
         this.resetForm();
+        this.populateCalendarSelect(calendars);
+        if (calendarId && this.calendarSelect) {
+            this.calendarSelect.value = String(calendarId);
+        }
         this.populateForm(event);
         this.toggleTimeInputs();
         

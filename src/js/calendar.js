@@ -29,6 +29,7 @@ export class Calendar {
         this.view = options.view || 'month'; // 'month', 'week', 'day'
         this.weekStartsOn = options.weekStartsOn ?? 0; // 0 = Sunday, 1 = Monday
         this.onEventClick = options.onEventClick || (() => {});
+        this.onEventRightClick = options.onEventRightClick || (() => {});
         this.maxEventsPerDay = 3;
         
         // Initial render
@@ -432,6 +433,7 @@ export class Calendar {
     createEventElement(event) {
         const eventEl = document.createElement('div');
         eventEl.className = 'event-item';
+        eventEl.__eventData = event;
         if (event.allDay) {
             eventEl.classList.add('all-day');
         }
@@ -450,6 +452,12 @@ export class Calendar {
             e.stopPropagation();
             this.onEventClick(event);
         });
+
+        eventEl.addEventListener('contextmenu', (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            this.onEventRightClick(event, e);
+        });
         
         return eventEl;
     }
@@ -460,6 +468,7 @@ export class Calendar {
     createWeekEventElement(event, date, startHour) {
         const eventEl = document.createElement('div');
         eventEl.className = 'week-event-item';
+        eventEl.__eventData = event;
         
         // Apply event color if available
         if (event.color) {
@@ -502,6 +511,12 @@ export class Calendar {
         eventEl.addEventListener('click', (e) => {
             e.stopPropagation();
             this.onEventClick(event);
+        });
+
+        eventEl.addEventListener('contextmenu', (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            this.onEventRightClick(event, e);
         });
         
         return eventEl;

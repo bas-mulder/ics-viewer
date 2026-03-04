@@ -122,7 +122,10 @@ class ICSViewerApp {
         // Context menu
         this.contextMenu = document.getElementById('contextMenu');
         this.contextAddEvent = document.getElementById('contextAddEvent');
+        this.contextEditEvent = document.getElementById('contextEditEvent');
+        this.contextDeleteEvent = document.getElementById('contextDeleteEvent');
         this.contextMenuData = null; // Stores date/time data for context menu
+        this.contextMenuEvent = null; // Stores event data for context menu
         
         // Random calendar modal
         this.generateRandomBtn = document.getElementById('generateRandomBtn');
@@ -240,6 +243,12 @@ class ICSViewerApp {
         // Context menu
         if (this.contextAddEvent) {
             this.contextAddEvent.addEventListener('click', () => this.handleContextAddEvent());
+        }
+        if (this.contextEditEvent) {
+            this.contextEditEvent.addEventListener('click', () => this.handleContextEditEvent());
+        }
+        if (this.contextDeleteEvent) {
+            this.contextDeleteEvent.addEventListener('click', () => this.handleContextDeleteEvent());
         }
         document.addEventListener('click', () => this.hideContextMenu());
         document.addEventListener('contextmenu', (e) => this.handleRightClick(e));
@@ -1015,31 +1024,48 @@ class ICSViewerApp {
      * Update an existing event
      */
     updateEvent(originalEvent, newEventData) {
-        // Find the calendar containing the event
-        let targetCalendar = null;
+        // Find the source calendar containing the event
+        let sourceCalendar = null;
         let eventIndex = -1;
         
         for (const calendar of this.calendars) {
             eventIndex = calendar.events.findIndex(e => e.uid === originalEvent.uid);
             if (eventIndex !== -1) {
-                targetCalendar = calendar;
+                sourceCalendar = calendar;
                 break;
             }
         }
         
-        if (!targetCalendar || eventIndex === -1) {
+        if (!sourceCalendar || eventIndex === -1) {
             this.showError('Event not found');
             return;
         }
-        
-        // Update the event
-        targetCalendar.events[eventIndex] = {
-            ...targetCalendar.events[eventIndex],
-            ...newEventData
-        };
-        
-        // Regenerate ICS data for the calendar
-        targetCalendar.icsData = eventsToICS(targetCalendar.events, targetCalendar.name);
+
+        const targetCalendarId = Number(newEventData.calendarId);
+        const targetCalendar = this.calendars.find((cal) => cal.id === targetCalendarId) || sourceCalendar;
+        const { calendarId, ...eventWithoutCalendarId } = newEventData;
+
+        // If calendar changed, move event between calendars
+        if (targetCalendar.id !== sourceCalendar.id) {
+            const updatedEvent = {
+                ...sourceCalendar.events[eventIndex],
+                ...eventWithoutCalendarId
+            };
+
+            sourceCalendar.events.splice(eventIndex, 1);
+            targetCalendar.events.push(updatedEvent);
+
+            sourceCalendar.icsData = eventsToICS(sourceCalendar.events, sourceCalendar.name);
+            targetCalendar.icsData = eventsToICS(targetCalendar.events, targetCalendar.name);
+        } else {
+            // Update event in-place
+            sourceCalendar.events[eventIndex] = {
+                ...sourceCalendar.events[eventIndex],
+                ...eventWithoutCalendarId
+            };
+
+            sourceCalendar.icsData = eventsToICS(sourceCalendar.events, sourceCalendar.name);
+        }
         
         // Save and update display
         this.saveCalendarsToStorage();
@@ -1052,14 +1078,23 @@ class ICSViewerApp {
      * Handle right-click on calendar cells
      */
     handleRightClick(e) {
+        // Check if right-click is on an event element first
+        const eventEl = e.target.closest('.event-item, .week-event-item');
+        if (eventEl && eventEl.__eventData) {
+            if (!this.uploadSection.classList.contains('hidden')) {
+                e.preventDefault();
+                this.contextMenuEvent = eventEl.__eventData;
+                this.contextMenuData = null;
+                this.showContextMenuOptions('event');
+                this.showContextMenu(e.clientX, e.clientY);
+                return;
+            }
+        }
+
         // Check if right-click is on a calendar cell
-        const dayCell = e.target.closest('.calendar-day, .calendar-hour-cell');
+        const dayCell = e.target.closest('.calendar-day, .week-hour-cell');
         
         if (dayCell && !this.uploadSection.classList.contains('hidden')) {
-            return; // Don't show context menu on upload section
-        }
-        
-        if (dayCell) {
             e.preventDefault();
             
             // Extract date information from the cell
@@ -1071,11 +1106,31 @@ class ICSViewerApp {
                     date: dateStr,
                     time: timeStr || null
                 };
-                
+                this.contextMenuEvent = null;
+                this.showContextMenuOptions('cell');
                 this.showContextMenu(e.clientX, e.clientY);
             }
         } else {
             this.hideContextMenu();
+        }
+    }
+
+    /**
+     * Show/hide context menu options based on target type
+     */
+    showContextMenuOptions(type) {
+        if (!this.contextAddEvent || !this.contextEditEvent || !this.contextDeleteEvent) {
+            return;
+        }
+
+        if (type === 'event') {
+            this.contextAddEvent.classList.add('hidden');
+            this.contextEditEvent.classList.remove('hidden');
+            this.contextDeleteEvent.classList.remove('hidden');
+        } else {
+            this.contextAddEvent.classList.remove('hidden');
+            this.contextEditEvent.classList.add('hidden');
+            this.contextDeleteEvent.classList.add('hidden');
         }
     }
 
@@ -1112,6 +1167,8 @@ class ICSViewerApp {
         if (this.contextMenu) {
             this.contextMenu.classList.add('hidden');
         }
+        this.contextMenuData = null;
+        this.contextMenuEvent = null;
     }
 
     /**
@@ -1120,9 +1177,74 @@ class ICSViewerApp {
     handleContextAddEvent() {
         if (this.contextMenuData && this.eventForm) {
             this.eventForm.openForNew(this.contextMenuData, this.calendars);
-            this.contextMenuData = null;
         }
         this.hideContextMenu();
+    }
+
+    /**
+     * Handle context menu "Edit Event" click
+     */
+    handleContextEditEvent() {
+        if (this.contextMenuEvent && this.eventForm) {
+            const eventCalendar = this.findCalendarForEvent(this.contextMenuEvent);
+            const calendarId = eventCalendar ? eventCalendar.id : null;
+            this.eventForm.openForEdit(this.contextMenuEvent, this.calendars, calendarId);
+        }
+        this.hideContextMenu();
+    }
+
+    /**
+     * Handle context menu "Delete Event" click
+     */
+    handleContextDeleteEvent() {
+        if (!this.contextMenuEvent) {
+            this.hideContextMenu();
+            return;
+        }
+
+        if (!confirm('Are you sure you want to delete this event?')) {
+            this.hideContextMenu();
+            return;
+        }
+
+        const targetCalendar = this.findCalendarForEvent(this.contextMenuEvent);
+        if (!targetCalendar) {
+            this.showError('Could not find event to delete');
+            this.hideContextMenu();
+            return;
+        }
+
+        const eventIndex = targetCalendar.events.findIndex((e) => e.uid === this.contextMenuEvent.uid);
+        if (eventIndex === -1) {
+            this.showError('Could not find event to delete');
+            this.hideContextMenu();
+            return;
+        }
+
+        targetCalendar.events.splice(eventIndex, 1);
+        targetCalendar.icsData = eventsToICS(targetCalendar.events, targetCalendar.name);
+        this.saveCalendarsToStorage();
+        this.updateVisibleEvents();
+        this.showSuccess('Event deleted successfully');
+        this.hideContextMenu();
+    }
+
+    /**
+     * Find calendar containing an event
+     */
+    findCalendarForEvent(event) {
+        if (event.calendarId) {
+            const byId = this.calendars.find((cal) => cal.id === Number(event.calendarId));
+            if (byId) {
+                return byId;
+            }
+        }
+
+        if (!event.uid) {
+            return null;
+        }
+
+        return this.calendars.find((cal) => cal.events.some((e) => e.uid === event.uid)) || null;
     }
 
     /**
@@ -1385,9 +1507,19 @@ class ICSViewerApp {
      */
     updateCalendarView() {
         // Get all visible events from all calendars
-        const allEvents = this.calendars
-            .filter(cal => cal.visible)
-            .flatMap(cal => cal.events);
+        const allEvents = [];
+        this.calendars.forEach(cal => {
+            if (cal.visible && cal.events) {
+                cal.events.forEach(event => {
+                    allEvents.push({
+                        ...event,
+                        color: cal.color,
+                        calendarId: cal.id,
+                        calendarName: cal.name
+                    });
+                });
+            }
+        });
         
         // Initialize or update calendar
         if (!this.calendar) {
@@ -1398,7 +1530,13 @@ class ICSViewerApp {
             this.calendar = new Calendar(this.calendarGrid, allEvents, {
                 view: savedView,
                 weekStartsOn: this.weekStartsOn,
-                onEventClick: (event) => this.eventModal.show(event)
+                onEventClick: (event) => this.eventModal.show(event),
+                onEventRightClick: (event, e) => {
+                    this.contextMenuEvent = event;
+                    this.contextMenuData = null;
+                    this.showContextMenuOptions('event');
+                    this.showContextMenu(e.clientX, e.clientY);
+                }
             });
             
             // Restore saved date if available
