@@ -18,6 +18,94 @@
     }
 }
 
+/* Calendar List */
+.calendar-list-container {
+    background-color: var(--color-bg-primary);
+    border-radius: var(--radius-lg);
+    padding: var(--space-lg);
+    margin-bottom: var(--space-lg);
+    box-shadow: var(--shadow-md);
+}
+
+.calendar-list-container h3 {
+    font-size: var(--font-size-lg);
+    font-weight: var(--font-weight-semibold);
+    color: var(--color-text-primary);
+    margin: 0 0 var(--space-md) 0;
+}
+
+.calendar-list {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-sm);
+}
+
+.calendar-list-item {
+    display: flex;
+    align-items: center;
+    gap: var(--space-md);
+    padding: var(--space-sm) var(--space-md);
+    background-color: var(--color-bg-secondary);
+    border-radius: var(--radius-md);
+    transition: background-color var(--transition-fast);
+}
+
+.calendar-list-item:hover {
+    background-color: var(--color-bg-tertiary);
+}
+
+.calendar-color-indicator {
+    width: 16px;
+    height: 16px;
+    border-radius: 50%;
+    flex-shrink: 0;
+}
+
+.calendar-info {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+
+.calendar-name {
+    font-weight: var(--font-weight-medium);
+    color: var(--color-text-primary);
+    font-size: var(--font-size-base);
+}
+
+.calendar-event-count {
+    font-size: var(--font-size-sm);
+    color: var(--color-text-secondary);
+}
+
+.calendar-actions {
+    display: flex;
+    gap: var(--space-xs);
+}
+
+.calendar-toggle-btn,
+.calendar-remove-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 32px;
+    height: 32px;
+    border-radius: var(--radius-sm);
+    color: var(--color-text-secondary);
+    transition: background-color var(--transition-fast), color var(--transition-fast);
+}
+
+.calendar-toggle-btn:hover {
+    background-color: var(--color-bg-primary);
+    color: var(--color-primary);
+}
+
+.calendar-remove-btn:hover {
+    background-color: var(--color-error);
+    color: white;
+}
+
 /* Calendar Controls */
 .calendar-controls {
     background-color: var(--color-bg-primary);
@@ -154,7 +242,7 @@
 
 .event-item {
     background-color: var(--color-primary);
-    color: var(--color-text-inverse);
+    color: white;
     padding: var(--space-xs) var(--space-sm);
     border-radius: var(--radius-sm);
     font-size: var(--font-size-xs);
@@ -162,16 +250,17 @@
     overflow: hidden;
     text-overflow: ellipsis;
     cursor: pointer;
-    transition: background-color var(--transition-fast), transform var(--transition-fast);
+    transition: opacity var(--transition-fast), transform var(--transition-fast);
+    border-left: 3px solid rgba(0, 0, 0, 0.2);
 }
 
 .event-item:hover {
-    background-color: var(--color-primary-dark);
+    opacity: 0.85;
     transform: translateX(2px);
 }
 
 .event-item.all-day {
-    background-color: var(--color-accent);
+    font-weight: var(--font-weight-semibold);
 }
 
 .event-more {
@@ -251,20 +340,20 @@
     left: 2px;
     right: 2px;
     background-color: var(--color-primary);
-    color: var(--color-text-inverse);
+    color: white;
     padding: var(--space-xs);
     border-radius: var(--radius-sm);
     font-size: var(--font-size-xs);
     overflow: hidden;
     cursor: pointer;
     box-shadow: var(--shadow-sm);
-    transition: transform var(--transition-fast), box-shadow var(--transition-fast);
-    border-left: 3px solid var(--color-primary-dark);
+    transition: opacity var(--transition-fast), box-shadow var(--transition-fast);
+    border-left: 3px solid rgba(0, 0, 0, 0.2);
     z-index: 1;
 }
 
 .week-event-item:hover {
-    transform: scale(1.01);
+    opacity: 0.9;
     box-shadow: var(--shadow-md);
     z-index: 10;
 }

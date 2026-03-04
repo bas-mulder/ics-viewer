@@ -412,6 +412,12 @@ export class Calendar {
             eventEl.classList.add('all-day');
         }
         
+        // Apply event color if available
+        if (event.color) {
+            eventEl.style.backgroundColor = event.color;
+            eventEl.style.borderLeftColor = event.color;
+        }
+        
         const timePrefix = event.allDay ? '' : `${formatTime(event.start)} `;
         eventEl.textContent = `${timePrefix}${event.summary || 'Untitled Event'}`;
         eventEl.title = event.summary || 'Untitled Event';
@@ -430,6 +436,12 @@ export class Calendar {
     createWeekEventElement(event, date, startHour) {
         const eventEl = document.createElement('div');
         eventEl.className = 'week-event-item';
+        
+        // Apply event color if available
+        if (event.color) {
+            eventEl.style.backgroundColor = event.color;
+            eventEl.style.borderLeftColor = event.color;
+        }
         
         const eventStart = event.start;
         const eventEnd = event.end || eventStart;
