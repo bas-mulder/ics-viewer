@@ -192,6 +192,24 @@
     grid-template-columns: var(--calendar-time-width) repeat(7, 1fr);
 }
 
+.week-grid-wrapper {
+    display: grid;
+    grid-template-columns: var(--calendar-time-width) repeat(7, 1fr);
+    position: relative;
+}
+
+.week-events-container {
+    position: absolute;
+    top: 0;
+    left: var(--calendar-time-width);
+    right: 0;
+    bottom: 0;
+    pointer-events: none;
+    z-index: 1;
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+}
+
 .time-slot {
     border-top: 1px solid var(--color-border-light);
     padding: var(--space-sm);
@@ -244,6 +262,40 @@
     background-color: rgba(37, 99, 235, 0.02);
 }
 
+/* Week View - Spanning Events */
+.week-event-spanning {
+    position: absolute;
+    background-color: var(--color-primary);
+    color: var(--color-text-inverse);
+    padding: var(--space-xs);
+    border-radius: var(--radius-sm);
+    font-size: var(--font-size-xs);
+    overflow: hidden;
+    cursor: pointer;
+    box-shadow: var(--shadow-sm);
+    transition: transform var(--transition-fast), box-shadow var(--transition-fast);
+    pointer-events: auto;
+    border-left: 3px solid var(--color-primary-dark);
+}
+
+.week-event-spanning:hover {
+    transform: scale(1.02);
+    box-shadow: var(--shadow-md);
+    z-index: 10;
+}
+
+.week-event-spanning .event-time {
+    font-weight: var(--font-weight-semibold);
+    margin-bottom: var(--space-xs);
+    display: block;
+}
+
+.week-event-spanning .event-title {
+    font-weight: var(--font-weight-medium);
+    display: block;
+}
+
+/* Legacy week event item (kept for backwards compatibility) */
 .week-event-item {
     position: absolute;
     left: 2px;
@@ -276,6 +328,22 @@
     grid-template-columns: var(--calendar-time-width) 1fr;
 }
 
+.day-grid-wrapper {
+    display: grid;
+    grid-template-columns: var(--calendar-time-width) 1fr;
+    position: relative;
+}
+
+.day-events-container {
+    position: absolute;
+    top: 0;
+    left: var(--calendar-time-width);
+    right: 0;
+    bottom: 0;
+    pointer-events: none;
+    z-index: 1;
+}
+
 .day-view-header {
     background-color: var(--color-bg-tertiary);
     padding: var(--space-lg);
@@ -297,6 +365,46 @@
     text-transform: uppercase;
     letter-spacing: 0.05em;
     margin-bottom: var(--space-sm);
+}
+
+/* Day View - Spanning Events */
+.day-event-spanning {
+    position: absolute;
+    background-color: var(--color-primary);
+    color: var(--color-text-inverse);
+    padding: var(--space-sm);
+    border-radius: var(--radius-sm);
+    font-size: var(--font-size-sm);
+    overflow: hidden;
+    cursor: pointer;
+    box-shadow: var(--shadow-sm);
+    transition: transform var(--transition-fast), box-shadow var(--transition-fast);
+    pointer-events: auto;
+    border-left: 4px solid var(--color-primary-dark);
+}
+
+.day-event-spanning:hover {
+    transform: scale(1.01);
+    box-shadow: var(--shadow-md);
+    z-index: 10;
+}
+
+.day-event-spanning .event-time {
+    font-weight: var(--font-weight-semibold);
+    margin-bottom: var(--space-xs);
+    display: block;
+}
+
+.day-event-spanning .event-title {
+    font-weight: var(--font-weight-medium);
+    display: block;
+    margin-bottom: var(--space-xs);
+}
+
+.day-event-spanning .event-location {
+    font-size: var(--font-size-xs);
+    opacity: 0.9;
+    display: block;
 }
 
 /* Calendar Actions */

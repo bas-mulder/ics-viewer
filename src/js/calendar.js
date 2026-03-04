@@ -265,10 +265,14 @@ export class Calendar {
         const weekStart = startOfWeek(this.currentDate, this.weekStartsOn);
         const hours = getDayHours();
         
+        // Create wrapper for grid and events
+        const gridWrapper = document.createElement('div');
+        gridWrapper.className = 'week-grid-wrapper';
+        
         // Empty cell for top-left corner
         const cornerCell = document.createElement('div');
         cornerCell.className = 'time-slot';
-        this.container.appendChild(cornerCell);
+        gridWrapper.appendChild(cornerCell);
         
         // Day headers
         for (let i = 0; i < 7; i++) {
@@ -289,36 +293,57 @@ export class Calendar {
             
             headerEl.appendChild(dayName);
             headerEl.appendChild(dayNumber);
-            this.container.appendChild(headerEl);
+            gridWrapper.appendChild(headerEl);
         }
         
-        // Hour rows
+        // Hour rows (empty cells for layout)
         hours.forEach(hour => {
             // Time label
             const timeLabel = document.createElement('div');
             timeLabel.className = 'time-slot';
             timeLabel.textContent = formatHour(hour);
-            this.container.appendChild(timeLabel);
+            gridWrapper.appendChild(timeLabel);
             
-            // Day cells
+            // Day cells (empty - events will be positioned absolutely)
             for (let i = 0; i < 7; i++) {
                 const date = addDays(weekStart, i);
                 const cellEl = document.createElement('div');
                 cellEl.className = 'week-hour-cell';
+                cellEl.dataset.day = i;
+                cellEl.dataset.hour = hour;
                 if (isToday(date)) {
                     cellEl.classList.add('today');
                 }
-                
-                // Add events for this hour
-                const events = this.getEventsForHour(date, hour);
-                events.forEach(event => {
-                    const eventEl = this.createWeekEventElement(event);
-                    cellEl.appendChild(eventEl);
-                });
-                
-                this.container.appendChild(cellEl);
+                gridWrapper.appendChild(cellEl);
             }
         });
+        
+        this.container.appendChild(gridWrapper);
+        
+        // Create events container (positioned absolutely over the grid)
+        const eventsContainer = document.createElement('div');
+        eventsContainer.className = 'week-events-container';
+        
+        // Render events for each day
+        for (let i = 0; i < 7; i++) {
+            const date = addDays(weekStart, i);
+            const dayEvents = this.getEventsForDate(date);
+            
+            // Track already rendered events to avoid duplicates
+            const renderedEvents = new Set();
+            
+            dayEvents.forEach(event => {
+                if (!event.allDay && !renderedEvents.has(event.uid)) {
+                    renderedEvents.add(event.uid);
+                    const eventEl = this.createSpanningWeekEventElement(event, date, i);
+                    if (eventEl) {
+                        eventsContainer.appendChild(eventEl);
+                    }
+                }
+            });
+        }
+        
+        this.container.appendChild(eventsContainer);
     }
 
     /**
@@ -326,6 +351,10 @@ export class Calendar {
      */
     renderDayView() {
         const hours = getDayHours();
+        
+        // Create wrapper for grid and events
+        const gridWrapper = document.createElement('div');
+        gridWrapper.className = 'day-grid-wrapper';
         
         // Day header
         const headerEl = document.createElement('div');
@@ -341,32 +370,44 @@ export class Calendar {
         
         headerEl.appendChild(weekday);
         headerEl.appendChild(dateNum);
-        this.container.appendChild(headerEl);
+        gridWrapper.appendChild(headerEl);
         
-        // Hour rows
+        // Hour rows (empty cells for layout)
         hours.forEach(hour => {
             // Time label
             const timeLabel = document.createElement('div');
             timeLabel.className = 'time-slot';
             timeLabel.textContent = formatHour(hour);
-            this.container.appendChild(timeLabel);
+            gridWrapper.appendChild(timeLabel);
             
-            // Hour cell
+            // Hour cell (empty - events will be positioned absolutely)
             const cellEl = document.createElement('div');
             cellEl.className = 'week-hour-cell';
+            cellEl.dataset.hour = hour;
             if (isToday(this.currentDate)) {
                 cellEl.classList.add('today');
             }
-            
-            // Add events for this hour
-            const events = this.getEventsForHour(this.currentDate, hour);
-            events.forEach(event => {
-                const eventEl = this.createWeekEventElement(event);
-                cellEl.appendChild(eventEl);
-            });
-            
-            this.container.appendChild(cellEl);
+            gridWrapper.appendChild(cellEl);
         });
+        
+        this.container.appendChild(gridWrapper);
+        
+        // Create events container (positioned absolutely over the grid)
+        const eventsContainer = document.createElement('div');
+        eventsContainer.className = 'day-events-container';
+        
+        const dayEvents = this.getEventsForDate(this.currentDate);
+        
+        dayEvents.forEach(event => {
+            if (!event.allDay) {
+                const eventEl = this.createSpanningDayEventElement(event);
+                if (eventEl) {
+                    eventsContainer.appendChild(eventEl);
+                }
+            }
+        });
+        
+        this.container.appendChild(eventsContainer);
     }
 
     /**
@@ -403,6 +444,123 @@ export class Calendar {
         timeEl.textContent = formatTime(event.start);
         
         const titleEl = document.createElement('div');
+        titleEl.textContent = event.summary || 'Untitled Event';
+        
+        eventEl.appendChild(timeEl);
+        eventEl.appendChild(titleEl);
+        
+        eventEl.addEventListener('click', (e) => {
+            e.stopPropagation();
+            this.onEventClick(event);
+        });
+        
+        return eventEl;
+    }
+
+    /**
+     * Create spanning event element for week view
+     */
+    createSpanningWeekEventElement(event, date, dayIndex) {
+        if (!event.start || event.allDay) return null;
+        
+        const eventStart = event.start;
+        const eventEnd = event.end || eventStart;
+        
+        // Calculate start and end positions
+        const dayStart = startOfDay(date);
+        const dayEnd = endOfDay(date);
+        
+        // Clamp event to current day
+        const clampedStart = eventStart < dayStart ? dayStart : eventStart;
+        const clampedEnd = eventEnd > dayEnd ? dayEnd : eventEnd;
+        
+        // Calculate hour positions (0-24)
+        const startHour = clampedStart.getHours() + clampedStart.getMinutes() / 60;
+        const endHour = clampedEnd.getHours() + clampedEnd.getMinutes() / 60;
+        
+        // Skip if event doesn't actually appear on this day
+        if (startHour >= endHour && clampedStart >= clampedEnd) return null;
+        
+        const eventEl = document.createElement('div');
+        eventEl.className = 'week-event-spanning';
+        
+        // Position the event
+        // Each hour cell is 60px tall (defined in CSS)
+        // Header row height needs to be calculated from actual header element
+        const cellHeight = 60;
+        const headerHeight = 60; // Approximate header height from CSS
+        const top = headerHeight + (startHour * cellHeight);
+        const height = (endHour - startHour) * cellHeight;
+        
+        eventEl.style.top = `${top}px`;
+        eventEl.style.height = `${Math.max(height, 20)}px`; // Minimum 20px height
+        
+        // Position within the grid column for this day
+        eventEl.style.gridColumn = `${dayIndex + 1}`;
+        eventEl.style.marginLeft = '4px';
+        eventEl.style.marginRight = '4px';
+        
+        // Content
+        const timeEl = document.createElement('div');
+        timeEl.className = 'event-time';
+        timeEl.textContent = `${formatTime(eventStart)}${eventEnd && eventEnd > eventStart ? ' - ' + formatTime(eventEnd) : ''}`;
+        
+        const titleEl = document.createElement('div');
+        titleEl.className = 'event-title';
+        titleEl.textContent = event.summary || 'Untitled Event';
+        
+        eventEl.appendChild(timeEl);
+        eventEl.appendChild(titleEl);
+        
+        eventEl.addEventListener('click', (e) => {
+            e.stopPropagation();
+            this.onEventClick(event);
+        });
+        
+        return eventEl;
+    }
+
+    /**
+     * Create spanning event element for day view
+     */
+    createSpanningDayEventElement(event) {
+        if (!event.start || event.allDay) return null;
+        
+        const eventStart = event.start;
+        const eventEnd = event.end || eventStart;
+        
+        const dayStart = startOfDay(this.currentDate);
+        const dayEnd = endOfDay(this.currentDate);
+        
+        // Clamp event to current day
+        const clampedStart = eventStart < dayStart ? dayStart : eventStart;
+        const clampedEnd = eventEnd > dayEnd ? dayEnd : eventEnd;
+        
+        // Calculate hour positions (0-24)
+        const startHour = clampedStart.getHours() + clampedStart.getMinutes() / 60;
+        const endHour = clampedEnd.getHours() + clampedEnd.getMinutes() / 60;
+        
+        const eventEl = document.createElement('div');
+        eventEl.className = 'day-event-spanning';
+        
+        // Position the event
+        const cellHeight = 60;
+        const headerHeight = 80; // Day view header is larger
+        const top = headerHeight + (startHour * cellHeight);
+        const height = (endHour - startHour) * cellHeight;
+        
+        eventEl.style.top = `${top}px`;
+        eventEl.style.height = `${Math.max(height, 20)}px`;
+        eventEl.style.marginLeft = '4px';
+        eventEl.style.marginRight = '4px';
+        
+        // Content
+        const timeEl = document.createElement('div');
+        timeEl.className = 'event-time';
+        timeEl.textContent = `${formatTime(eventStart)}${eventEnd && eventEnd > eventStart ? ' - ' + formatTime(eventEnd) : ''}`;
+        
+        const titleEl = document.createElement('div');
+        titleEl.className = 'event-title';
         titleEl.textContent = event.summary || 'Untitled Event';
         
         eventEl.appendChild(timeEl);
