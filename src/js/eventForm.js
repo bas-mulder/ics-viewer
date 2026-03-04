@@ -134,7 +134,7 @@ export class EventForm {
         }
         
         this.toggleTimeInputs();
-        this.modal.style.display = 'block';
+        this.modal.classList.remove('hidden');
         this.summaryInput.focus();
     }
 
@@ -151,7 +151,7 @@ export class EventForm {
         this.populateForm(event);
         this.toggleTimeInputs();
         
-        this.modal.style.display = 'block';
+        this.modal.classList.remove('hidden');
         this.summaryInput.focus();
     }
 
@@ -193,7 +193,7 @@ export class EventForm {
     }
 
     close() {
-        this.modal.style.display = 'none';
+        this.modal.classList.add('hidden');
         this.resetForm();
         this.currentEvent = null;
         this.editMode = false;

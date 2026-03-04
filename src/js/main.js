@@ -908,7 +908,7 @@ class ICSViewerApp {
                 cal.events.forEach(event => {
                     allEvents.push({
                         ...event,
-                        calendarColor: cal.color,
+                        color: cal.color,
                         calendarId: cal.id,
                         calendarName: cal.name
                     });
